@@ -1,0 +1,23 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: "Install dependencies"
+        run: pnpm i
+      - name: "ESLint the ESLint config"
+        run: pnpm eslint -c basic.eslint.config.js basic.eslint.config.js eslint.config.js
+      - name: "ESLint"
+        run: pnpm eslint src
+      - name: "Run type checks"
+        run: pnpm tsc
+      - name: "Build"
+        run: pnpm build
