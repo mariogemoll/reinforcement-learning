@@ -1,4 +1,4 @@
-const greeting = document.querySelector<HTMLElement>("#greeting");
+const greeting = document.querySelector<HTMLElement>('#greeting');
 if (greeting) {
-  greeting.textContent = "Hello, world!";
+  greeting.textContent = 'Hello, world!';
 }
