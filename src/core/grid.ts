@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Mario Gemoll
+// SPDX-License-Identifier: 0BSD
+
 import type { CellType, Grid, GridLayout } from './types';
 
 export function createGridFromLayout(layout: GridLayout): Grid {

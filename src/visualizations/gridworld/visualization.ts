@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Mario Gemoll
+// SPDX-License-Identifier: 0BSD
+
 import { createGridFromLayout } from '../../core/grid';
 import type { RewardModel } from '../../core/mdp';
 import type { Action, GridLayout } from '../../core/types';

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Mario Gemoll
+// SPDX-License-Identifier: 0BSD
+
 export const DP_DEFAULTS = {
   successProb: 0.8
 } as const;

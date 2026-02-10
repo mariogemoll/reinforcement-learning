@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Mario Gemoll
+// SPDX-License-Identifier: 0BSD
+
 import type { GridLayout } from '../core/types';
 
 export const MEDIUM_GRID: GridLayout = {

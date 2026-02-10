@@ -26,5 +26,7 @@ jobs:
         run: pnpm test
       - name: "Run stylelint"
         run: pnpm stylelint "*.css"
+      - name: "Check license headers"
+        run: scripts/check-license-headers.sh
       - name: "Build"
         run: pnpm build

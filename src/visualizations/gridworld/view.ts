@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Mario Gemoll
+// SPDX-License-Identifier: 0BSD
+
 import { CANVAS_COLORS } from '../../config/constants';
 import type { RewardModel } from '../../core/mdp';
 import type { Action, Grid } from '../../core/types';

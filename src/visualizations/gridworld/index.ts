@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Mario Gemoll
+// SPDX-License-Identifier: 0BSD
+
 import { DP_DEFAULTS, REWARDS } from '../../config/constants';
 import { MEDIUM_GRID } from '../../config/grids';
 import { type GridworldVisualization,initializeGridworldVisualization } from './visualization';
