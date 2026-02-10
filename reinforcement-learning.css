@@ -1,0 +1,239 @@
+:root {
+  --color-surface: #fff;
+  --color-surface-muted: #f0f0f0;
+  --color-border: #d9d9d9;
+  --color-text-muted: #666;
+  --color-text-subtle: #777;
+  --color-slip: #b45309;
+  --color-ok: #15803d;
+  --color-pending: #64748b;
+}
+
+#gridworld-visualization > div {
+  background: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  border-radius: 0;
+}
+
+.gridworld-viz-canvas-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.gridworld-viz-canvas {
+  display: block;
+  cursor: pointer;
+  outline: none;
+  border-radius: 0;
+}
+
+.gridworld-viz-terminal-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: transparent;
+}
+
+.gridworld-viz-terminal-overlay[hidden] {
+  display: none;
+}
+
+.gridworld-viz-terminal-overlay.is-goal {
+  background: rgb(34 197 94 / 30%);
+}
+
+.gridworld-viz-terminal-overlay.is-trap {
+  background: rgb(220 20 60 / 30%);
+}
+
+.gridworld-viz-terminal-panel {
+  background: rgb(255 255 255 / 85%);
+  padding: 16px 18px;
+  border-radius: 6px;
+  text-align: center;
+  min-width: 220px;
+  max-width: 80%;
+}
+
+.terminal-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.gridworld-viz-terminal-overlay.is-goal .terminal-title {
+  color: #15803d;
+}
+
+.gridworld-viz-terminal-overlay.is-trap .terminal-title {
+  color: #b91c1c;
+}
+
+.terminal-summary {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #555;
+}
+
+.gridworld-viz-side-panel {
+  flex: 0 0 200px;
+  width: 200px;
+  height: var(--gridworld-viz-grid-height);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gridworld-viz-side-panel .section {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+}
+
+.stat-grid,
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.stat-card,
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 3px;
+  text-align: center;
+  box-sizing: border-box;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+}
+
+.stat-grid {
+  font-size: 12px;
+}
+
+.stat-card strong {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.label {
+  display: block;
+  text-align: center;
+  line-height: 1.1;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-subtle);
+}
+
+.status-text {
+  font-size: 12px;
+}
+
+.gridworld-viz-gamepad-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+}
+
+.controls-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slider-wrap {
+  width: 100%;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.mono-value {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  grid-template-rows: repeat(3, 32px);
+  gap: 2px;
+  justify-content: center;
+}
+
+.dpad-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.dpad-btn[data-action='up'] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dpad-btn[data-action='left'] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad-btn[data-action='right'] {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.dpad-btn[data-action='down'] {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.control-reset {
+  width: 100%;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.move-slip {
+  color: var(--color-slip);
+}
+
+.move-ok {
+  color: var(--color-ok);
+}
+
+.move-pending {
+  color: var(--color-pending);
+}
+
+@media (width <= 900px) {
+  #gridworld-visualization > div {
+    flex-direction: column;
+  }
+
+  .gridworld-viz-side-panel {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+}
