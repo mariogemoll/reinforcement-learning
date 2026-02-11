@@ -13,6 +13,11 @@ import type {
   Policy,
   StateValues
 } from '../core/types';
+import {
+  cloneActionValues,
+  policiesEqual,
+  stateKey
+} from './shared';
 
 export interface QDPSnapshot {
   actionValues: ActionValues;
@@ -27,15 +32,6 @@ export interface QDPResult {
   finalPolicy: Policy;
   finalActionValues: ActionValues;
   finalStateValues: StateValues;
-}
-
-function stateKey(
-  table: TransitionTable,
-  index: number
-): string {
-  const row = Math.floor(index / table.cols);
-  const col = index % table.cols;
-  return `${String(row)},${String(col)}`;
 }
 
 function getStateActionValue(
@@ -213,18 +209,6 @@ function improvePolicy(
   return newPolicy;
 }
 
-function policiesEqual(a: Policy, b: Policy): boolean {
-  if (a.size !== b.size) {
-    return false;
-  }
-  for (const [key, action] of a) {
-    if (b.get(key) !== action) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function runPolicyIterationQ(
   table: TransitionTable,
   initialPolicy: Policy,
@@ -237,16 +221,6 @@ export function runPolicyIterationQ(
   let currentActionValues: ActionValues = new Map(
     initialActionValues
   );
-
-  const cloneActionValues = (
-    values: ActionValues
-  ): ActionValues => {
-    const copy: ActionValues = new Map();
-    for (const [state, actionMap] of values) {
-      copy.set(state, new Map(actionMap));
-    }
-    return copy;
-  };
 
   const maxOuterIterations = 50;
   let currentStateValues = deriveStateValues(

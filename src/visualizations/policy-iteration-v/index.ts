@@ -10,8 +10,8 @@ import type {
   DPVisualization,
   InitParams
 } from '../dp-shared/types';
+import { renderGrid } from '../dp-shared/v-renderer';
 import { initializeDPVisualization } from '../dp-shared/visualization';
-import { renderGrid } from './renderer';
 
 export type PolicyIterationVVisualization = DPVisualization;
 

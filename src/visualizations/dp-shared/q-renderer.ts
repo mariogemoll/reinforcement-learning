@@ -15,8 +15,8 @@ import {
   drawPolicyArrow,
   drawTrapCross as drawTrap
 } from '../../rendering/cell-icons';
-import { drawAgentCircle, drawEffects } from '../dp-shared/grid-effects';
-import type { AgentPosition, Effect, ValueRange } from '../dp-shared/types';
+import { drawAgentCircle, drawEffects } from './grid-effects';
+import type { AgentPosition, Effect, ValueRange } from './types';
 
 interface PolicyTipOverlay {
   x: number;

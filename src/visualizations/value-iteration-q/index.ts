@@ -4,11 +4,11 @@
 import { DP_DEFAULTS, REWARDS } from '../../config/constants';
 import { MEDIUM_GRID } from '../../config/grids';
 import type { ActionValues } from '../../core/types';
-import { runPolicyIterationQ } from '../../dp/policy-iteration-q';
 import {
   cloneActionValues,
   initializeActionValues
 } from '../../dp/shared';
+import { runValueIterationQ } from '../../dp/value-iteration-q';
 import { renderGrid } from '../dp-shared/q-renderer';
 import type {
   DPVisualization,
@@ -16,21 +16,18 @@ import type {
 } from '../dp-shared/types';
 import { initializeDPVisualization } from '../dp-shared/visualization';
 
-export type PolicyIterationQVisualization = DPVisualization;
+export type ValueIterationQVisualization = DPVisualization;
 
-function initializePolicyIterationQVisualization(
+function initializeValueIterationQVisualization(
   params: InitParams
-): PolicyIterationQVisualization {
-  // initialActionValues is set by createZeroValues (called by
-  // initializeDPVisualization before computeSnapshots).
+): ValueIterationQVisualization {
   let initialActionValues: ActionValues = new Map();
   let showQLabels = false;
 
   return initializeDPVisualization({
-    computeSnapshots(table, initialPolicy, gamma, theta) {
-      return runPolicyIterationQ(
+    computeSnapshots(table, _initialPolicy, gamma, theta) {
+      return runValueIterationQ(
         table,
-        new Map(initialPolicy),
         cloneActionValues(initialActionValues),
         gamma,
         theta
@@ -66,58 +63,39 @@ function initializePolicyIterationQVisualization(
       );
     },
 
-    getPhaseExplanation(snapshot, nextPhase, atStart, atEnd, initialValueMode) {
+    getPhaseExplanation(snapshot, _nextPhase, atStart, atEnd, initialValueMode) {
       const initialActionValuesText = initialValueMode === 'zero'
         ? 'all action-values = 0'
         : 'random action-values';
 
       if (atStart) {
         return [
-          'Initial state: Policy and action-values are'
+          'Initial state: Action-values are'
           + ` arbitrary (here: ${initialActionValuesText}).`,
-          'The first step starts policy evaluation in Q-space:',
-          'for each state-action pair we update Q(s,a) to expected',
-          "reward plus gamma times Q(s', pi(s')) under the current policy."
-        ].join(' ');
-      }
-
-      if (
-        snapshot.phase === 'evaluation'
-        && nextPhase === 'improvement'
-      ) {
-        return [
-          "The action-values don't change substantially any more, so we have reached",
-          'convergence. The next step will be policy improvement: we update',
-          'the policy greedily from the current action-values.'
-        ].join(' ');
-      }
-
-      if (snapshot.phase === 'evaluation') {
-        return [
-          'Policy evaluation in Q-space: for each (s,a), update Q(s,a) as',
-          "expected reward plus gamma times Q(s', pi(s')) under the current policy.",
-          'Triangles show Q(s,a) for up/down/left/right within each floor cell.',
-          'We sweep until Q changes are below theta.'
+          'The first step performs a Bellman optimality backup in Q-space:',
+          "for each (s,a) we set Q(s,a) = R(s) + gamma * sum P(s'|s,a) * max_a' Q(s',a')."
         ].join(' ');
       }
 
       if (atEnd) {
         return [
-          "The action-values don't change substantially any more, we have reached",
-          'convergence, and policy improvement no longer changes the policy.',
-          'We have found the optimal policy and are done.'
+          "The action-values don't change substantially any more, we have",
+          'reached convergence. The greedy policy with respect to these',
+          'Q-values is optimal.'
         ].join(' ');
       }
 
       return [
-        'After policy iteration: we have set a new policy. The next step',
-        'starts the next round of policy evaluation in Q-space, where we',
-        'update each Q(s,a) under the fixed improved policy.'
+        `Value iteration sweep (delta: ${snapshot.delta.toFixed(4)}):`,
+        'For each state-action pair, we set Q(s,a) to the expected reward',
+        'plus gamma times the max Q-value of the next state. This combines',
+        'evaluation and improvement into a single step. We repeat until',
+        'convergence.'
       ].join(' ');
     },
 
     initialValuesLabel: 'Initial values',
-    radioGroupName: 'pi-viz-q-initial-values',
+    radioGroupName: 'vi-viz-q-initial-values',
     extraCheckboxes: [{
       label: 'Show values',
       ariaLabel: 'Show values on grid',
@@ -129,10 +107,10 @@ function initializePolicyIterationQVisualization(
   }, params);
 }
 
-export function initPolicyIterationQVisualization(
+export function initValueIterationQVisualization(
   parent: HTMLElement
-): PolicyIterationQVisualization {
-  return initializePolicyIterationQVisualization({
+): ValueIterationQVisualization {
+  return initializeValueIterationQVisualization({
     parent,
     layout: MEDIUM_GRID,
     cellSize: 50,

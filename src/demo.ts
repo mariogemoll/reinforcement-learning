@@ -9,10 +9,20 @@ import {
 import {
   initPolicyIterationVVisualization,
   type PolicyIterationVVisualization } from './visualizations/policy-iteration-v';
+import {
+  initValueIterationQVisualization,
+  type ValueIterationQVisualization
+} from './visualizations/value-iteration-q';
+import {
+  initValueIterationVVisualization,
+  type ValueIterationVVisualization
+} from './visualizations/value-iteration-v';
 
 let gridworldVisualization: GridworldVisualization | null = null;
 let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
+let valueIterationVVisualization: ValueIterationVVisualization | null = null;
+let valueIterationQVisualization: ValueIterationQVisualization | null = null;
 
 function initialize(): void {
   const gridworldPanel = document.getElementById(
@@ -40,6 +50,24 @@ function initialize(): void {
     policyIterationQVisualization?.destroy();
     policyIterationQVisualization =
       initPolicyIterationQVisualization(piQPanel);
+  }
+
+  const viVPanel = document.getElementById(
+    'value-iteration-v-visualization'
+  );
+  if (viVPanel) {
+    valueIterationVVisualization?.destroy();
+    valueIterationVVisualization =
+      initValueIterationVVisualization(viVPanel);
+  }
+
+  const viQPanel = document.getElementById(
+    'value-iteration-q-visualization'
+  );
+  if (viQPanel) {
+    valueIterationQVisualization?.destroy();
+    valueIterationQVisualization =
+      initValueIterationQVisualization(viQPanel);
   }
 }
 

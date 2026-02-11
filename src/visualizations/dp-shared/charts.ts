@@ -300,13 +300,21 @@ export function renderPolicyChangeChart(
   const { ctx, w, h } = configured;
   const ch = h - CHART_PAD.top - CHART_PAD.bottom;
 
+  const hasImprovementPhase = snapshots.some(
+    s => s.phase === 'improvement'
+  );
   const points = snapshots
     .map((snap, index) => ({ snap, index }))
-    .filter(({ snap, index }) => snap.phase === 'improvement' && index > 0)
-    .map(({ snap, index }) => ({
+    .filter(({ snap, index }) =>
+      index > 0
+      && (hasImprovementPhase
+        ? snap.phase === 'improvement'
+        : true)
+    )
+    .map(({ index }) => ({
       index,
       value: countPolicyChanges(
-        snapshots[index - 1].policy, snap.policy
+        snapshots[index - 1].policy, snapshots[index].policy
       )
     }));
   if (points.length === 0) {

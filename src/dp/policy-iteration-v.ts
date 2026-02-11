@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
+import { actionToIndex, type TransitionTable } from '../core/mdp';
+import type { Policy, StateValues } from '../core/types';
 import {
-  ACTIONS,
-  actionToIndex,
-  forEachTransition,
-  type TransitionTable } from '../core/mdp';
-import type { Action, Policy, StateValues } from '../core/types';
+  computeBellmanValue,
+  greedyPolicyFromValues,
+  policiesEqual,
+  stateKey
+} from './shared';
 
 export interface VDPSnapshot {
   stateValues: StateValues;
@@ -19,37 +21,6 @@ export interface VDPResult {
   snapshots: VDPSnapshot[];
   finalPolicy: Policy;
   finalValues: StateValues;
-}
-
-function stateKey(
-  table: TransitionTable,
-  index: number
-): string {
-  const row = Math.floor(index / table.cols);
-  const col = index % table.cols;
-  return `${String(row)},${String(col)}`;
-}
-
-function computeBellmanValue(
-  table: TransitionTable,
-  stateIndex: number,
-  actionIndex: number,
-  values: StateValues,
-  gamma: number
-): number {
-  const reward = table.rewards[stateIndex];
-  let value = 0;
-  forEachTransition(
-    table,
-    stateIndex,
-    actionIndex,
-    (nextState, probability) => {
-      const nextVal = values.get(stateKey(table, nextState))
-        ?? 0;
-      value += probability * (reward + gamma * nextVal);
-    }
-  );
-  return value;
 }
 
 function evaluationSweep(
@@ -91,55 +62,6 @@ function evaluationSweep(
   }
 
   return { values: newValues, delta };
-}
-
-function improvePolicy(
-  table: TransitionTable,
-  values: StateValues,
-  gamma: number
-): Policy {
-  const newPolicy: Policy = new Map();
-  const size = table.rows * table.cols;
-
-  for (let s = 0; s < size; s++) {
-    if (table.cellTypes[s] !== 1) {
-      continue;
-    }
-    if (table.isTerminal[s] === 1) {
-      continue;
-    }
-
-    const key = stateKey(table, s);
-    let bestAction: Action = 'up';
-    let bestValue = -Infinity;
-
-    for (const action of ACTIONS) {
-      const actionIndex = actionToIndex(action);
-      const value = computeBellmanValue(
-        table, s, actionIndex, values, gamma
-      );
-      if (value > bestValue) {
-        bestValue = value;
-        bestAction = action;
-      }
-    }
-
-    newPolicy.set(key, bestAction);
-  }
-
-  return newPolicy;
-}
-
-function policiesEqual(a: Policy, b: Policy): boolean {
-  if (a.size !== b.size) {
-    return false;
-  }
-  for (const [key, action] of a) {
-    if (b.get(key) !== action) {
-      return false;
-    }
-  }
-  return true;
 }
 
 export function runPolicyIterationV(
@@ -184,7 +106,9 @@ export function runPolicyIterationV(
 
     // Policy improvement
     const oldPolicy = currentPolicy;
-    currentPolicy = improvePolicy(table, currentValues, gamma);
+    currentPolicy = greedyPolicyFromValues(
+      table, currentValues, gamma
+    );
 
     snapshots.push({
       stateValues: new Map(currentValues),
