@@ -143,7 +143,7 @@ export function createGridworldVizDom(initialSlipperiness: number): GridworldViz
   slipperinessSlider.type = 'range';
   slipperinessSlider.min = '0';
   slipperinessSlider.max = '1';
-  slipperinessSlider.step = '0.05';
+  slipperinessSlider.step = '0.01';
   slipperinessSlider.value = initialSlipperiness.toFixed(2);
   slipperinessSlider.setAttribute('aria-label', 'Slipperiness');
 

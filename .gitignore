@@ -3,6 +3,7 @@
 .cursor
 .pnpm-store
 .vscode
+CLAUDE.md
 node_modules
 dist
 pnpm-lock.yaml

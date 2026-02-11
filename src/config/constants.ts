@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: 0BSD
 
 export const DP_DEFAULTS = {
-  successProb: 0.8
+  successProb: 0.8,
+  gamma: 0.9,
+  theta: 0.01
+} as const;
+
+export const ANIMATION = {
+  agentStepMs: 50,
+  effectDurationMs: 600,
+  spawnDurationMs: 3000
 } as const;
 
 export const REWARDS = {
@@ -14,8 +22,8 @@ export const REWARDS = {
 export const CANVAS_COLORS = {
   cells: {
     floor: '#90EE90',
-    wall: '#8B4513',
-    goal: '#FFD700',
+    wall: '#5A2D0C',
+    goal: '#22C55E',
     trap: '#DC143C',
     fallback: '#CCCCCC'
   },
@@ -29,7 +37,7 @@ export const CANVAS_COLORS = {
     slipped: 'rgba(234, 88, 12, 0.6)'
   },
   icons: {
-    goal: '#b8860b',
+    goal: '#166534',
     trap: '#8b0000'
   },
   terminalOverlay: {

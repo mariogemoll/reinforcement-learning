@@ -15,3 +15,9 @@ export interface GridLayout {
   traps: [number, number][];
   agentStart?: [number, number];
 }
+
+export type Policy = Map<string, Action>;
+
+export type StateValues = Map<string, number>;
+
+export type ActionValues = Map<string, Map<Action, number>>;

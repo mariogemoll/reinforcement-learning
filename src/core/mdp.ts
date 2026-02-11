@@ -5,6 +5,8 @@ import type { Action, Grid } from './types';
 
 const ACTION_COUNT = 4;
 
+export const ACTIONS: Action[] = ['up', 'down', 'left', 'right'];
+
 export const CELL_CODE = {
   wall: 0,
   floor: 1,
@@ -31,6 +33,10 @@ export function actionToIndex(action: Action): number {
   }
 }
 
+export function indexToAction(index: number): Action {
+  return ACTIONS[index] ?? 'up';
+}
+
 function getPerpActionIndices(actionIndex: number): [number, number] {
   if (actionIndex === 0 || actionIndex === 1) {
     return [2, 3];
@@ -39,6 +45,7 @@ function getPerpActionIndices(actionIndex: number): [number, number] {
 }
 
 export interface TransitionTable {
+  rows: number;
   cols: number;
   cellTypes: Uint8Array;
   isTerminal: Uint8Array;
@@ -136,6 +143,7 @@ export function buildTransitionTable(
   }
 
   return {
+    rows,
     cols,
     cellTypes,
     isTerminal,
@@ -144,6 +152,18 @@ export function buildTransitionTable(
     successProb,
     perpProb
   };
+}
+
+export function forEachTransition(
+  table: TransitionTable,
+  stateIndex: number,
+  actionIndex: number,
+  visitor: (nextState: number, probability: number) => void
+): void {
+  const base = (stateIndex * ACTION_COUNT + actionIndex) * 3;
+  visitor(table.transitions[base], table.successProb);
+  visitor(table.transitions[base + 1], table.perpProb);
+  visitor(table.transitions[base + 2], table.perpProb);
 }
 
 export function sampleNextState(

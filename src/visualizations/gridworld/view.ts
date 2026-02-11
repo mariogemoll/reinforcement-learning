@@ -140,7 +140,7 @@ function drawTrail(
 
 function getCellColor(cellType: Grid[number][number]): string {
   switch (cellType) {
-  case 'floor': return CANVAS_COLORS.cells.floor;
+  case 'floor': return '#E8D9B5';
   case 'wall': return CANVAS_COLORS.cells.wall;
   case 'goal': return CANVAS_COLORS.cells.goal;
   case 'trap': return CANVAS_COLORS.cells.trap;
