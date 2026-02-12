@@ -9,9 +9,9 @@ import { runPolicyIterationV } from '../../dp/policy-iteration-v';
 import type {
   DPVisualization,
   InitParams
-} from '../dp-shared/types';
-import { renderGrid } from '../dp-shared/v-renderer';
-import { initializeDPVisualization } from '../dp-shared/visualization';
+} from '../shared/types';
+import { renderGrid } from '../shared/v-renderer';
+import { initializeDPVisualization } from '../shared/visualization';
 
 export type PolicyIterationVVisualization = DPVisualization;
 
@@ -55,7 +55,8 @@ function initializePolicyIterationVVisualization(
         true,
         true,
         true,
-        valueRange
+        valueRange,
+        false
       );
     },
 

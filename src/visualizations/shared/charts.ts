@@ -6,7 +6,13 @@ import type { BaseSnapshot, ValueRange } from './types';
 
 const CHART_PAD = { top: 6, right: 20, bottom: 18, left: 60 };
 
-function configureCanvas(
+interface DeltaPolicySnapshot {
+  delta: number;
+  phase: 'evaluation' | 'improvement';
+  policy: Policy;
+}
+
+export function configureCanvas(
   canvas: HTMLCanvasElement
 ): {
   ctx: CanvasRenderingContext2D;
@@ -41,7 +47,7 @@ function configureCanvas(
   return { ctx, w: displayW, h: displayH };
 }
 
-function chartXForIndex(
+export function chartXForIndex(
   index: number,
   totalSnapshots: number,
   width: number
@@ -65,7 +71,7 @@ export function chartXToNearestIndex(
   return Math.max(0, Math.min(raw, totalSnapshots - 1));
 }
 
-function drawXAxis(
+export function drawXAxis(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number
@@ -80,7 +86,7 @@ function drawXAxis(
 
 }
 
-function drawYAxisLabel(
+export function drawYAxisLabel(
   ctx: CanvasRenderingContext2D,
   h: number,
   text: string
@@ -107,7 +113,7 @@ function drawYAxisLabel(
   ctx.restore();
 }
 
-function drawCurrentTimestepGuide(
+export function drawCurrentTimestepGuide(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
@@ -213,7 +219,7 @@ export function computeRoundValueRanges(
 
 export function renderChart(
   chartCanvas: HTMLCanvasElement,
-  snapshots: BaseSnapshot[],
+  snapshots: DeltaPolicySnapshot[],
   currentIndex: number
 ): void {
   const configured = configureCanvas(chartCanvas);
@@ -290,7 +296,7 @@ export function renderChart(
 
 export function renderPolicyChangeChart(
   chartCanvas: HTMLCanvasElement,
-  snapshots: BaseSnapshot[],
+  snapshots: DeltaPolicySnapshot[],
   currentIndex: number
 ): void {
   const configured = configureCanvas(chartCanvas);

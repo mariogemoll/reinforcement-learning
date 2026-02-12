@@ -9,12 +9,12 @@ import {
   cloneActionValues,
   initializeActionValues
 } from '../../dp/shared';
-import { renderGrid } from '../dp-shared/q-renderer';
+import { renderGrid } from '../shared/q-renderer';
 import type {
   DPVisualization,
   InitParams
-} from '../dp-shared/types';
-import { initializeDPVisualization } from '../dp-shared/visualization';
+} from '../shared/types';
+import { initializeDPVisualization } from '../shared/visualization';
 
 export type PolicyIterationQVisualization = DPVisualization;
 
@@ -62,7 +62,8 @@ function initializePolicyIterationQVisualization(
         false,
         false,
         showQLabels,
-        valueRange
+        valueRange,
+        null
       );
     },
 

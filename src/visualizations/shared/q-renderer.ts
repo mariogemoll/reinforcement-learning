@@ -7,7 +7,7 @@ import type {
   ActionValues,
   Grid,
   Policy,
-  StateValues
+  StateValues as CellValues
 } from '../../core/types';
 import {
   directionOffsets,
@@ -25,6 +25,7 @@ interface PolicyTipOverlay {
   action: Action;
   strokeColor: string;
   outlineColor: string;
+  key: string;
 }
 
 interface ActionValueLabelOverlay {
@@ -32,6 +33,13 @@ interface ActionValueLabelOverlay {
   y: number;
   cellSize: number;
   actionMap: Map<Action, number> | undefined;
+}
+
+interface StateValueLabelOverlay {
+  x: number;
+  y: number;
+  cellSize: number;
+  value: number;
 }
 
 function lerpFloat(a: number, b: number, t: number): number {
@@ -152,7 +160,7 @@ function getCellColor(
 
 function computeValueRange(
   grid: Grid,
-  stateValues: StateValues
+  cellValues: CellValues
 ): ValueRange {
   let minVal = Infinity;
   let maxVal = -Infinity;
@@ -165,7 +173,7 @@ function computeValueRange(
         && cellType !== 'wall'
       ) {
         const key = `${String(ri)},${String(ci)}`;
-        const v = stateValues.get(key);
+        const v = cellValues.get(key);
         if (v !== undefined) {
           minVal = Math.min(minVal, v);
           maxVal = Math.max(maxVal, v);
@@ -204,7 +212,7 @@ export function renderGrid(
   canvas: HTMLCanvasElement,
   grid: Grid,
   cellSize: number,
-  stateValues: StateValues,
+  cellValues: CellValues,
   actionValues: ActionValues,
   policy: Policy,
   agents: AgentPosition[],
@@ -212,7 +220,9 @@ export function renderGrid(
   showValueBg: boolean,
   showArrows: boolean,
   showNumbers: boolean,
-  valueRange: ValueRange | null
+  valueRange: ValueRange | null,
+  optimalPolicy: Policy | null,
+  cellNumberValues?: CellValues
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) {
@@ -222,18 +232,19 @@ export function renderGrid(
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const { minVal, maxVal } = showValueBg
-    ? (valueRange ?? computeValueRange(grid, stateValues))
+    ? (valueRange ?? computeValueRange(grid, cellValues))
     : { minVal: 0, maxVal: 0 };
   const actionRange = computeActionValueRange(actionValues);
   const policyOverlays: PolicyTipOverlay[] = [];
   const actionValueLabelOverlays: ActionValueLabelOverlay[] = [];
+  const stateValueLabelOverlays: StateValueLabelOverlay[] = [];
 
   grid.forEach((row, ri) => {
     row.forEach((cellType, ci) => {
       const x = ci * cellSize;
       const y = ri * cellSize;
       const key = `${String(ri)},${String(ci)}`;
-      const v = stateValues.get(key);
+      const v = cellValues.get(key);
 
       if (
         showValueBg
@@ -252,6 +263,7 @@ export function renderGrid(
           x,
           y,
           cellSize,
+          key,
           actionValues.get(key),
           policy.get(key),
           actionRange
@@ -272,12 +284,21 @@ export function renderGrid(
       }
 
       if (showNumbers && cellType === 'floor') {
-        actionValueLabelOverlays.push({
-          x,
-          y,
-          cellSize,
-          actionMap: actionValues.get(key)
-        });
+        if (cellNumberValues !== undefined) {
+          stateValueLabelOverlays.push({
+            x,
+            y,
+            cellSize,
+            value: cellNumberValues.get(key) ?? 0
+          });
+        } else {
+          actionValueLabelOverlays.push({
+            x,
+            y,
+            cellSize,
+            actionMap: actionValues.get(key)
+          });
+        }
       }
 
       if (showArrows && cellType === 'floor') {
@@ -297,16 +318,23 @@ export function renderGrid(
 
   // Render policy tips last so they are never cut by grid/borders/overlays.
   for (const overlay of policyOverlays) {
+    const optAction = optimalPolicy?.get(overlay.key);
+    const disagrees = optimalPolicy !== null
+      && optAction !== undefined
+      && overlay.action !== optAction;
+
     drawDirectionalTriangle(
-      ctx,
-      overlay.x,
-      overlay.y,
-      overlay.cellSize,
+      ctx, overlay.x, overlay.y, overlay.cellSize,
       overlay.action,
-      overlay.strokeColor,
-      overlay.outlineColor,
-      true
+      overlay.strokeColor, overlay.outlineColor, true
     );
+    if (disagrees) {
+      drawDirectionalTriangle(
+        ctx, overlay.x, overlay.y, overlay.cellSize,
+        optAction,
+        'rgb(150, 150, 150)', 'rgba(60, 60, 60, 0.6)', true
+      );
+    }
   }
 
   for (const overlay of actionValueLabelOverlays) {
@@ -318,6 +346,35 @@ export function renderGrid(
       overlay.actionMap
     );
   }
+
+  for (const overlay of stateValueLabelOverlays) {
+    drawStateValueLabel(
+      ctx,
+      overlay.x,
+      overlay.y,
+      overlay.cellSize,
+      overlay.value
+    );
+  }
+}
+
+function drawStateValueLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cellSize: number,
+  value: number
+): void {
+  ctx.fillStyle = '#000000';
+  const fontSize = Math.max(10, cellSize * 0.22);
+  ctx.font = `bold ${String(fontSize)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(
+    value.toFixed(2),
+    x + cellSize / 2,
+    y + cellSize - 2
+  );
 }
 
 function drawActionValueTriangles(
@@ -325,6 +382,7 @@ function drawActionValueTriangles(
   x: number,
   y: number,
   cellSize: number,
+  key: string,
   actionMap: Map<Action, number> | undefined,
   policyAction: Action | undefined,
   actionRange: ValueRange
@@ -379,7 +437,8 @@ function drawActionValueTriangles(
         cellSize,
         action,
         strokeColor: policyTipColor,
-        outlineColor: policyOutlineColor
+        outlineColor: policyOutlineColor,
+        key
       };
     } else {
       drawDirectionalTriangle(

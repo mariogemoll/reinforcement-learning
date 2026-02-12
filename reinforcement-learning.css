@@ -280,6 +280,75 @@
   min-width: 0;
 }
 
+/* Monte Carlo visualization grid layout */
+
+.mc-viz-grid {
+  display: grid;
+  grid-template-columns: 400px 300px 300px 200px;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+}
+
+.mc-viz-cell-grid {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+
+.mc-viz-cell-charts-left {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-viz-cell-charts-right {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-viz-cell-timeline {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-viz-cell-sliders {
+  grid-column: 4;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mc-viz-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+.mc-viz-checkbox-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.mc-viz-radio-label {
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.mc-viz-checkbox-label {
+  font-size: 11px;
+  cursor: pointer;
+}
+
 .pi-viz-right-col {
   flex: 0 0 400px;
   width: 400px;
@@ -361,6 +430,13 @@
 
 .pi-viz-param-stack input[type='range'] {
   width: 100%;
+}
+
+.mc-viz-resample-btn {
+  width: 100%;
+  height: 28px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .pi-viz-step-btn {

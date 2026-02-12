@@ -3,6 +3,10 @@
 
 import { type GridworldVisualization,initGridworldVisualization } from './visualizations/gridworld';
 import {
+  initMonteCarloVisualization,
+  type MonteCarloVisualization
+} from './visualizations/monte-carlo';
+import {
   initPolicyIterationQVisualization,
   type PolicyIterationQVisualization
 } from './visualizations/policy-iteration-q';
@@ -23,6 +27,7 @@ let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
 let valueIterationVVisualization: ValueIterationVVisualization | null = null;
 let valueIterationQVisualization: ValueIterationQVisualization | null = null;
+let monteCarloVisualization: MonteCarloVisualization | null = null;
 
 function initialize(): void {
   const gridworldPanel = document.getElementById(
@@ -68,6 +73,15 @@ function initialize(): void {
     valueIterationQVisualization?.destroy();
     valueIterationQVisualization =
       initValueIterationQVisualization(viQPanel);
+  }
+
+  const monteCarloPanel = document.getElementById(
+    'monte-carlo-visualization'
+  );
+  if (monteCarloPanel) {
+    monteCarloVisualization?.destroy();
+    monteCarloVisualization =
+      initMonteCarloVisualization(monteCarloPanel);
   }
 }
 

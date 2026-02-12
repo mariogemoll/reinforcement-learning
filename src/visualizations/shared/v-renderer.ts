@@ -85,7 +85,8 @@ export function renderGrid(
   showValueBg: boolean,
   showArrows: boolean,
   showNumbers: boolean,
-  valueRange: ValueRange | null
+  valueRange: ValueRange | null,
+  invertColors: boolean
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) {
@@ -110,7 +111,9 @@ export function renderGrid(
         && v !== undefined
         && cellType === 'floor'
       ) {
-        ctx.fillStyle = valueColor(v, minVal, maxVal);
+        ctx.fillStyle = invertColors
+          ? valueColor(v, maxVal, minVal)
+          : valueColor(v, minVal, maxVal);
       } else {
         ctx.fillStyle = getCellColor(cellType);
       }

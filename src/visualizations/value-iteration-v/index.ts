@@ -9,9 +9,9 @@ import { runValueIterationV } from '../../dp/value-iteration-v';
 import type {
   DPVisualization,
   InitParams
-} from '../dp-shared/types';
-import { renderGrid } from '../dp-shared/v-renderer';
-import { initializeDPVisualization } from '../dp-shared/visualization';
+} from '../shared/types';
+import { renderGrid } from '../shared/v-renderer';
+import { initializeDPVisualization } from '../shared/visualization';
 
 export type ValueIterationVVisualization = DPVisualization;
 
@@ -52,7 +52,8 @@ function initializeValueIterationVVisualization(
         true,
         true,
         true,
-        valueRange
+        valueRange,
+        false
       );
     },
 
