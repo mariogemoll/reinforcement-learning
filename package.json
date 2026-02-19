@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
-    "lint": "eslint src && stylelint \"*.css\""
+    "lint": "eslint src && stylelint \"*.css\"",
+    "convert-dqn-weights": "esbuild scripts/convert-dqn-weights.ts --bundle --platform=node --format=esm | node --input-type=module"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.1",
@@ -31,6 +32,7 @@
     "./visualizations/policy-iteration-v": "./src/visualizations/policy-iteration-v/index.ts",
     "./visualizations/value-iteration-v": "./src/visualizations/value-iteration-v/index.ts",
     "./visualizations/value-iteration-q": "./src/visualizations/value-iteration-q/index.ts",
-    "./visualizations/monte-carlo": "./src/visualizations/monte-carlo/index.ts"
+    "./visualizations/monte-carlo": "./src/visualizations/monte-carlo/index.ts",
+    "./visualizations/cartpole": "./src/visualizations/cartpole/index.ts"
   }
 }
