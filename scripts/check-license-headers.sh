@@ -10,7 +10,6 @@ set -x
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-cd $SCRIPT_DIR
-pnpm exec tsc -p $SCRIPT_DIR/tsconfig.json
-cd $SCRIPT_DIR/..
-node scripts/dist/check-license-headers.js
+cd "$SCRIPT_DIR"
+pnpm exec tsc -p "$SCRIPT_DIR/tsconfig.json"
+node "$SCRIPT_DIR/dist/check-license-headers.js"

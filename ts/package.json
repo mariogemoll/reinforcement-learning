@@ -1,7 +1,6 @@
 {
   "name": "reinforcement-learning",
   "version": "0.0.0",
-  "private": true,
   "type": "module",
   "scripts": {
     "dev": "esbuild src/demo.ts --bundle --format=esm --sourcemap --outfile=dist/main.js --watch --servedir=.",
@@ -10,8 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
-    "lint": "eslint src && stylelint \"*.css\"",
-    "convert-dqn-weights": "esbuild scripts/convert-dqn-weights.ts --bundle --platform=node --format=esm | node --input-type=module"
+    "lint": "eslint src && stylelint \"*.css\""
   },
   "devDependencies": {
     "@eslint/js": "^9.0.1",

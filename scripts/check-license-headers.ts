@@ -245,7 +245,7 @@ function main(): void {
       console.error('');
     }
 
-    console.error('Run "pnpm run add-licenses" to fix these issues.');
+    console.error('Fix the headers listed above and re-run this check.');
     process.exit(1);
   }
 }
