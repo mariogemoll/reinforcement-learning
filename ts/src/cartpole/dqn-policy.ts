@@ -6,8 +6,8 @@ import type { CartPoleAction, CartPoleState } from './types';
 
 // Network dimensions
 const IN = 4;
-const H1 = 128;
-const H2 = 128;
+const H1 = 64;
+const H2 = 64;
 const OUT = 2;
 
 function linear(
