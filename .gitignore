@@ -1,10 +1,16 @@
 .claude
 .codex
 .cursor
+.ipynb_checkpoints
 .pnpm-store
+.python-version
 .vscode
+__pycache__
 CLAUDE.md
 node_modules
 dist
 pnpm-lock.yaml
+uv.lock
+*.egg-info
 *.log
+*.safetensors

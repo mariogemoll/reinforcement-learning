@@ -27,7 +27,7 @@ const LIMIT_LINE_COLOR = 'rgba(220, 38, 38, 0.3)';
 const WHEEL_COLOR = '#1a202c';
 const TICK_COLOR = '#777';
 
-export function renderCartpole(
+export function renderCartPole(
   canvas: HTMLCanvasElement,
   state: Readonly<CartPoleState>,
   limits: {

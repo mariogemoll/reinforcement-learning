@@ -132,6 +132,60 @@ function hasEmptyLineAfterHeaders(content: string): boolean {
   return false;
 }
 
+function validateNotebook(filePath: string, expectedLicense: string): ValidationError | null {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const relativePath = path.relative(process.cwd(), filePath);
+  const validCopyrights = ['2026 Mario Gemoll'];
+
+  let notebook: { cells?: { cell_type: string; source: string[] }[] };
+  try {
+    notebook = JSON.parse(content);
+  } catch {
+    return { file: relativePath, expected: 'valid JSON notebook', actual: 'parse error', field: 'license' };
+  }
+
+  const firstCell = notebook.cells?.[0];
+  if (!firstCell) {
+    return { file: relativePath, expected: validCopyrights.join(' or '), actual: null, field: 'copyright' };
+  }
+
+  const cellSource = firstCell.source.join('');
+  const commentStyle = firstCell.cell_type === 'markdown'
+    ? { start: '<!-- ', end: ' -->' }
+    : { start: '# ', end: '' };
+
+  // Reuse the text-based extractors on the cell source
+  // but we need to check comment style matches what's expected
+  const actualCopyright = extractCopyrightFromContent(cellSource);
+  const actualLicense = extractLicenseFromContent(cellSource);
+
+  // Verify the comment prefix matches the cell type
+  const firstLine = cellSource.split('\n')[0];
+  if (!firstLine.startsWith(commentStyle.start)) {
+    return {
+      file: relativePath,
+      expected: `${commentStyle.start}SPDX-FileCopyrightText: ...`,
+      actual: firstLine || null,
+      field: 'copyright'
+    };
+  }
+
+  if (actualCopyright === null) {
+    return { file: relativePath, expected: validCopyrights.join(' or '), actual: null, field: 'copyright' };
+  }
+  if (!validCopyrights.includes(actualCopyright)) {
+    return { file: relativePath, expected: validCopyrights.join(' or '), actual: actualCopyright, field: 'copyright' };
+  }
+  if (actualLicense === null) {
+    return { file: relativePath, expected: expectedLicense, actual: null, field: 'license' };
+  }
+  if (actualLicense !== expectedLicense) {
+    return { file: relativePath, expected: expectedLicense, actual: actualLicense, field: 'license' };
+  }
+
+  return null;
+}
+
 function validateFile(filePath: string, expectedLicense: string): ValidationError | null {
   const content = fs.readFileSync(filePath, 'utf-8');
   const actualLicense = extractLicenseFromContent(content);
@@ -207,12 +261,18 @@ function checkDirectory(dir: string, errors: ValidationError[]): void {
       }
 
       const expectedLicense = getLicenseForFile(fullPath);
-      const commentStyle = getCommentStyle(fullPath);
 
-      if (expectedLicense !== null && commentStyle !== null) {
-        const error = validateFile(fullPath, expectedLicense);
-        if (error) {
-          errors.push(error);
+      if (expectedLicense !== null) {
+        const ext = path.extname(fullPath);
+        if (ext === '.ipynb') {
+          const error = validateNotebook(fullPath, expectedLicense);
+          if (error) errors.push(error);
+        } else {
+          const commentStyle = getCommentStyle(fullPath);
+          if (commentStyle !== null) {
+            const error = validateFile(fullPath, expectedLicense);
+            if (error) errors.push(error);
+          }
         }
       }
     }

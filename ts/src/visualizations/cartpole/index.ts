@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
-export type { CartpolePolicyVisualization } from './visualization';
+export type { CartPoleVisualization } from './visualization';
 import { loadDqnPolicy } from '../../cartpole/dqn-policy';
 import {
-  type CartpolePolicyVisualization,
-  initializeCartpolePolicyVisualization
+  type CartPoleVisualization,
+  initializeCartPoleVisualization
 } from './visualization';
 
-export async function initCartpolePolicyVisualization(
+export async function initCartPoleVisualization(
   parent: HTMLElement,
   weightsUrl: string
-): Promise<CartpolePolicyVisualization> {
+): Promise<CartPoleVisualization> {
   const policy = await loadDqnPolicy(weightsUrl);
-  return initializeCartpolePolicyVisualization(parent, policy);
+  return initializeCartPoleVisualization(parent, policy);
 }

@@ -14,7 +14,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - name: "Install dependencies"
+      - uses: astral-sh/setup-uv@v5
+      - name: "Install JS dependencies"
         working-directory: ts
         run: pnpm i
       - name: "Install script dependencies"
@@ -26,10 +27,10 @@ jobs:
       - name: "ESLint"
         working-directory: ts
         run: pnpm eslint src
-      - name: "Run type checks"
+      - name: "Run TS type checks"
         working-directory: ts
         run: pnpm run typecheck
-      - name: "Run tests"
+      - name: "Run TS tests"
         working-directory: ts
         run: pnpm test
       - name: "Run stylelint"
@@ -38,6 +39,11 @@ jobs:
       - name: "Check license headers"
         working-directory: scripts
         run: pnpm run check-license-headers
-      - name: "Build"
+      - name: "Build TS project"
         working-directory: ts
         run: pnpm build
+      - name: "Check notebooks"
+        working-directory: scripts
+        run: pnpm exec check-notebook ../py/dqn.ipynb
+      - name: "Run ruff"
+        run: uvx ruff check py/

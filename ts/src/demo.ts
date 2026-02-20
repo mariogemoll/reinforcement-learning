@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: 0BSD
 
 import {
-  type CartpolePolicyVisualization,
-  initCartpolePolicyVisualization
+  type CartPoleVisualization,
+  initCartPoleVisualization
 } from './visualizations/cartpole';
 import { type GridworldVisualization,initGridworldVisualization } from './visualizations/gridworld';
 import {
@@ -26,7 +26,7 @@ import {
   type ValueIterationVVisualization
 } from './visualizations/value-iteration-v';
 
-let cartpolePolicyVisualization: CartpolePolicyVisualization | null = null;
+let cartpoleVisualization: CartPoleVisualization | null = null;
 let gridworldVisualization: GridworldVisualization | null = null;
 let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
@@ -40,10 +40,10 @@ function initialize(): void {
   );
   if (cartpolePolicyPanel) {
     const panel = cartpolePolicyPanel;
-    cartpolePolicyVisualization?.destroy();
-    cartpolePolicyVisualization = null;
-    void initCartpolePolicyVisualization(panel, '/public/dqn-weights.safetensors').then(viz => {
-      cartpolePolicyVisualization = viz;
+    cartpoleVisualization?.destroy();
+    cartpoleVisualization = null;
+    void initCartPoleVisualization(panel, '/public/dqn-weights.safetensors').then(viz => {
+      cartpoleVisualization = viz;
     });
   }
 

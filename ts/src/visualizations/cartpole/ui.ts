@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
-import type { CartpolePolicyVizDom } from './types';
+import type { CartPoleVizDom } from './types';
 
 const DEFAULT_SPEED = 1;
 
-export function createCartpolePolicyVizDom(): CartpolePolicyVizDom {
+export function createCartPoleVizDom(): CartPoleVizDom {
   const container = document.createElement('div');
   container.className = 'visualization';
 

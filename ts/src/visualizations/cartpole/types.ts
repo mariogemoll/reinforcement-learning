@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
-export interface CartpolePolicyVizDom {
+export interface CartPoleVizDom {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
   terminalOverlay: HTMLDivElement;

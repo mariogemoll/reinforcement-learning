@@ -22,13 +22,13 @@ export interface LicenseConfig {
 }
 
 export const config: LicenseConfig = {
-  excludedDirs: ['node_modules', 'dist', 'build', '.git', '.claude'],
+  excludedDirs: ['node_modules', 'dist', 'build', '.git', '.claude', '.venv', '.ipynb_checkpoints'],
   excludedFiles: ['.DS_Store'],
   copyrightText: '2026 Mario Gemoll',
   rules: [
     // All files with 0BSD
     {
-      files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.mjs', '**/*.html', '**/*.css', '**/*.md'],
+      files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.mjs', '**/*.html', '**/*.css', '**/*.md', '**/*.ipynb'],
       license: '0BSD',
       description: 'All project files'
     }

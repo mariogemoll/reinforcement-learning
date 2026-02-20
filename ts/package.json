@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "esbuild src/demo.ts --bundle --format=esm --sourcemap --outfile=dist/main.js --watch --servedir=.",
     "build": "esbuild src/demo.ts --bundle --format=esm --minify --outfile=dist/main.js",
+    "build:anywidget-cartpole": "esbuild src/visualizations/cartpole/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-visualization.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -6,25 +6,25 @@ import {
   ANGLE_LIMIT,
   createCartPoleEnvironment,
   POSITION_LIMIT } from '../../cartpole/environment';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, renderCartpole } from './renderer';
-import { createCartpolePolicyVizDom } from './ui';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, renderCartPole } from './renderer';
+import { createCartPoleVizDom } from './ui';
 
-export interface CartpolePolicyVisualization {
+export interface CartPoleVisualization {
   destroy(): void;
 }
 
 // How many ticks to step per interval at speed=1
 const BASE_TICK_MS = 40;
 
-export function initializeCartpolePolicyVisualization(
+export function initializeCartPoleVisualization(
   parent: HTMLElement,
   runDqnPolicy: DqnPolicy
-): CartpolePolicyVisualization {
+): CartPoleVisualization {
   const env = createCartPoleEnvironment({
     angleLimit: ANGLE_LIMIT,
     positionLimit: POSITION_LIMIT
   });
-  const dom = createCartpolePolicyVizDom();
+  const dom = createCartPoleVizDom();
   const {
     container, canvas, resetBtn, speedSlider, speedValueEl,
     pauseBtn
@@ -80,7 +80,7 @@ export function initializeCartpolePolicyVisualization(
   const render = (): void => {
     updateQDisplay();
     updateStats();
-    renderCartpole(canvas, env.getState());
+    renderCartPole(canvas, env.getState());
   };
 
   // Run the policy one step
