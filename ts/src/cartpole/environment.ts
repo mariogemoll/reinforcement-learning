@@ -40,18 +40,18 @@ export function createCartPoleEnvironment(
   let steps = 0;
   const state: CartPoleState = [0, 0, 0, 0];
 
-  const initializeUpright = (): void => {
-    state[0] = 0;
-    state[1] = 0;
-    state[2] = 0;
-    state[3] = 0;
+  const initializeRandom = (): void => {
+    state[0] = (Math.random() * 0.1) - 0.05;
+    state[1] = (Math.random() * 0.1) - 0.05;
+    state[2] = (Math.random() * 0.1) - 0.05;
+    state[3] = (Math.random() * 0.1) - 0.05;
   };
 
-  initializeUpright();
+  initializeRandom();
 
   const reset = (): CartPoleState => {
     steps = 0;
-    initializeUpright();
+    initializeRandom();
     return [...state];
   };
 
