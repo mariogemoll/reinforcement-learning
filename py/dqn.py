@@ -27,15 +27,14 @@ def _get_env_bundle():
 class QNetwork(nnx.Module):
     def __init__(self, rngs: nnx.Rngs):
         dims = [OBS_DIM] + [HIDDEN_DIM] * NUM_LAYERS + [NUM_ACTIONS]
-        self.layers = nnx.List([
-            nnx.Linear(dims[i], dims[i + 1], rngs=rngs)
-            for i in range(len(dims) - 1)
-        ])
+        self.num_layers = len(dims) - 1
+        for i in range(self.num_layers):
+            setattr(self, f"layer_{i}", nnx.Linear(dims[i], dims[i + 1], rngs=rngs))
 
     def __call__(self, x):
-        for i in range(len(self.layers) - 1):
-            x = nnx.relu(self.layers[i](x))
-        return self.layers[-1](x)
+        for i in range(self.num_layers - 1):
+            x = nnx.relu(getattr(self, f"layer_{i}")(x))
+        return getattr(self, f"layer_{self.num_layers - 1}")(x)
 
 
 @functools.lru_cache(maxsize=1)
