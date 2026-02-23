@@ -13,6 +13,8 @@ from flax import nnx
 ENV_NAME = "CartPole-v1"
 NUM_ACTIONS = 2
 OBS_DIM = 4
+HIDDEN_DIM = 16
+NUM_LAYERS = 1
 START_EPSILON = 1.0
 END_EPSILON = 0.05
 
@@ -24,14 +26,16 @@ def _get_env_bundle():
 
 class QNetwork(nnx.Module):
     def __init__(self, rngs: nnx.Rngs):
-        self.layer1 = nnx.Linear(OBS_DIM, 64, rngs=rngs)
-        self.layer2 = nnx.Linear(64, 64, rngs=rngs)
-        self.output = nnx.Linear(64, NUM_ACTIONS, rngs=rngs)
+        dims = [OBS_DIM] + [HIDDEN_DIM] * NUM_LAYERS + [NUM_ACTIONS]
+        self.layers = nnx.List([
+            nnx.Linear(dims[i], dims[i + 1], rngs=rngs)
+            for i in range(len(dims) - 1)
+        ])
 
     def __call__(self, x):
-        x = nnx.relu(self.layer1(x))
-        x = nnx.relu(self.layer2(x))
-        return self.output(x)
+        for i in range(len(self.layers) - 1):
+            x = nnx.relu(self.layers[i](x))
+        return self.layers[-1](x)
 
 
 @functools.lru_cache(maxsize=1)
@@ -122,12 +126,12 @@ def _make_runner(buf_cap, batch_sz, total_steps, env_name=ENV_NAME):
                 batch,
                 carry["lr"],
             )
-            return loss, p, o
+            return loss, p, o, jnp.bool_(True)
 
         def skip_train(_):
-            return jnp.float32(0.0), carry["params"], carry["opt_state"]
+            return jnp.float32(0.0), carry["params"], carry["opt_state"], jnp.bool_(False)
 
-        loss, params, opt_state = jax.lax.cond(
+        loss, params, opt_state, trained = jax.lax.cond(
             bsz >= carry["learn_start"], do_train, skip_train, None
         )
         target_params = jax.lax.cond(
@@ -160,6 +164,21 @@ def _make_runner(buf_cap, batch_sz, total_steps, env_name=ENV_NAME):
         )
         new_best_score = jnp.where(should_update_best, rolling, carry["best_score"])
 
+        loss_slot = carry["loss_idx"] % carry["loss_arr"].shape[0]
+        new_loss_arr = jax.lax.cond(
+            trained,
+            lambda: carry["loss_arr"].at[loss_slot].set(loss),
+            lambda: carry["loss_arr"],
+        )
+        new_loss_idx = carry["loss_idx"] + trained.astype(jnp.int32)
+
+        new_ep_rets = jax.lax.cond(
+            done,
+            lambda: carry["ep_rets"].at[carry["ep_count"]].set(carry["ep_return"] + reward),
+            lambda: carry["ep_rets"],
+        )
+        new_ep_count = carry["ep_count"] + done.astype(jnp.int32)
+
         return {
             **carry,
             "key": key,
@@ -182,9 +201,10 @@ def _make_runner(buf_cap, batch_sz, total_steps, env_name=ENV_NAME):
             "ep_ret_buf_size": new_ep_ret_buf_size,
             "best_params": new_best_params,
             "best_score": new_best_score,
-            "loss_arr": carry["loss_arr"].at[i].set(loss),
-            "step_rewards": carry["step_rewards"].at[i].set(reward),
-            "step_dones": carry["step_dones"].at[i].set(done.astype(jnp.float32)),
+            "loss_arr": new_loss_arr,
+            "loss_idx": new_loss_idx,
+            "ep_rets": new_ep_rets,
+            "ep_count": new_ep_count,
         }
 
     @jax.jit
@@ -236,22 +256,16 @@ def run_config(cfg, total_steps, init_params):
             "learn_start": jnp.int32(cfg["learn_start"]),
             "upd_every": jnp.int32(cfg["upd_every"]),
             "loss_arr": jnp.zeros((total_steps,), dtype=jnp.float32),
-            "step_rewards": jnp.zeros((total_steps,), dtype=jnp.float32),
-            "step_dones": jnp.zeros((total_steps,), dtype=jnp.float32),
+            "loss_idx": jnp.int32(0),
+            "ep_rets": jnp.zeros((total_steps,), dtype=jnp.float32),
+            "ep_count": jnp.int32(0),
         }
     )
 
-    sr = np.asarray(fc["step_rewards"])
-    sd = np.asarray(fc["step_dones"])
-    ep_rets, ep_r = [], 0.0
-    for r, d in zip(sr, sd):
-        ep_r += float(r)
-        if d:
-            ep_rets.append(ep_r)
-            ep_r = 0.0
-
-    losses = np.asarray(fc["loss_arr"])
-    losses = losses[losses != 0.0].tolist()
+    ep_count = int(fc["ep_count"])
+    ep_rets = np.asarray(fc["ep_rets"])[:ep_count].tolist()
+    loss_count = int(fc["loss_idx"])
+    losses = np.asarray(fc["loss_arr"])[:loss_count].tolist()
 
     return ep_rets, losses, fc["best_params"]
 

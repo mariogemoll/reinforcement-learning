@@ -4,19 +4,9 @@
 import { loadSafetensors } from './safetensors';
 import type { CartPoleAction, CartPoleState } from './types';
 
-// Network dimensions
-const IN = 4;
-const H1 = 64;
-const H2 = 64;
-const OUT = 2;
-
-function linear(
-  input: number[],
-  w: Float32Array,
-  b: Float32Array,
-  inDim: number,
-  outDim: number
-): number[] {
+function linear(input: number[], w: Float32Array, b: Float32Array): number[] {
+  const outDim = b.length;
+  const inDim = input.length;
   const out: number[] = new Array(outDim) as number[];
   for (let i = 0; i < outDim; i++) {
     let sum = b[i];
@@ -42,18 +32,22 @@ export type DqnPolicy = (state: Readonly<CartPoleState>) => DqnOutput;
 
 export async function loadDqnPolicy(url: string): Promise<DqnPolicy> {
   const tensors = await loadSafetensors(url);
-  const w0 = tensors.w0;
-  const b0 = tensors.b0;
-  const w2 = tensors.w2;
-  const b2 = tensors.b2;
-  const w4 = tensors.w4;
-  const b4 = tensors.b4;
+
+  // Load all layers: w0/b0, w1/b1, ... until a key is missing.
+  const layers: { w: Float32Array; b: Float32Array }[] = [];
+  for (let i = 0; ; i++) {
+    const wKey = `w${String(i)}`;
+    const bKey = `b${String(i)}`;
+    if (!Object.hasOwn(tensors, wKey) || !Object.hasOwn(tensors, bKey)) {break;}
+    layers.push({ w: tensors[wKey], b: tensors[bKey] });
+  }
 
   return (state: Readonly<CartPoleState>): DqnOutput => {
-    const input = [state[0], state[1], state[2], state[3]];
-    const h1 = relu(linear(input, w0, b0, IN, H1));
-    const h2 = relu(linear(h1, w2, b2, H1, H2));
-    const q = linear(h2, w4, b4, H2, OUT);
+    let x: number[] = [state[0], state[1], state[2], state[3]];
+    for (let i = 0; i < layers.length - 1; i++) {
+      x = relu(linear(x, layers[i].w, layers[i].b));
+    }
+    const q = linear(x, layers[layers.length - 1].w, layers[layers.length - 1].b);
     const action: CartPoleAction = q[1] > q[0] ? 1 : 0;
     return { qLeft: q[0], qRight: q[1], action };
   };
