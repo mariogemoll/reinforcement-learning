@@ -81,6 +81,82 @@ def plot_dqn_metrics(
         plt.show()
 
 
+def eval_ql_max_score(
+    params: object,
+    hidden_dim: int,
+    num_layers: int,
+    num_eval_episodes: int = 100,
+    batch_size: int = 20,
+    seed: int = 123,
+    show_progress: bool = True,
+) -> tuple[int, int, float, float]:
+    """Evaluate a QL policy and report how often it reaches max score."""
+    import importlib
+
+    jax = importlib.import_module("jax")
+    jnp = importlib.import_module("jax.numpy")
+    np = importlib.import_module("numpy")
+    tqdm = importlib.import_module("tqdm.auto").tqdm
+    ql = importlib.import_module("ql")
+
+    env = ql.env
+    env_params = ql.env_params
+
+    @jax.jit
+    def rollout_episode(p, key):
+        obs, env_state = env.reset(key, env_params)
+        done = jnp.bool_(False)
+        score = jnp.float32(0.0)
+
+        def step_fn(carry, _):
+            obs, env_state, done, score, key = carry
+            key, step_key = jax.random.split(key)
+
+            q_values = ql.forward(hidden_dim, num_layers, p, obs)
+            action = jnp.argmax(q_values).astype(jnp.int32)
+            next_obs, next_env_state, reward, step_done, _ = env.step(
+                step_key, env_state, action, env_params
+            )
+
+            obs = jax.tree.map(lambda n, o: jnp.where(done, o, n), next_obs, obs)
+            env_state = jax.tree.map(lambda n, o: jnp.where(done, o, n), next_env_state, env_state)
+            score = score + jnp.where(done, 0.0, reward)
+            done = jnp.logical_or(done, step_done)
+            return (obs, env_state, done, score, key), None
+
+        (_, _, _, score, _), _ = jax.lax.scan(
+            step_fn,
+            (obs, env_state, done, score, key),
+            xs=None,
+            length=env_params.max_steps_in_episode,
+        )
+        return score
+
+    @jax.jit
+    def eval_batch(p, keys):
+        return jax.vmap(lambda k: rollout_episode(p, k))(keys)
+
+    key = jax.random.key(seed)
+    num_batches = (num_eval_episodes + batch_size - 1) // batch_size
+    scores: list[float] = []
+    batch_iter = range(num_batches)
+    if show_progress:
+        batch_iter = tqdm(batch_iter, desc="Evaluating")
+
+    for batch_idx in batch_iter:
+        n = min(batch_size, num_eval_episodes - batch_idx * batch_size)
+        key, seed_key = jax.random.split(key)
+        keys = jax.random.split(seed_key, n)
+        batch_scores = np.asarray(eval_batch(params, keys))
+        scores.extend(batch_scores.tolist())
+
+    scores_arr = np.asarray(scores, dtype=np.float32)
+    max_score = float(env_params.max_steps_in_episode)
+    max_count = int(np.sum(scores_arr >= max_score))
+    max_pct = 100.0 * max_count / num_eval_episodes
+    return max_count, num_eval_episodes, max_score, max_pct
+
+
 def eval_dqn_max_score(
     params: object,
     num_eval_episodes: int = 100,
