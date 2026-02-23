@@ -27,6 +27,15 @@ export interface DPVizDom {
   stepCounterEl: HTMLElement;
 }
 
+export interface TimelineStepControlsDom {
+  stepRow: HTMLDivElement;
+  goToStartBtn: HTMLButtonElement;
+  stepBackBtn: HTMLButtonElement;
+  playBtn: HTMLButtonElement;
+  stepForwardBtn: HTMLButtonElement;
+  stepCounterEl: HTMLElement;
+}
+
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string
@@ -36,6 +45,53 @@ function el<K extends keyof HTMLElementTagNameMap>(
     element.className = className;
   }
   return element;
+}
+
+export function createTimelineStepControls(): TimelineStepControlsDom {
+  const goToStartBtn = document.createElement('button');
+  goToStartBtn.type = 'button';
+  goToStartBtn.className = 'pi-viz-step-btn';
+  goToStartBtn.textContent = '\u23EE';
+  goToStartBtn.title = 'Go to start';
+
+  const stepBackBtn = document.createElement('button');
+  stepBackBtn.type = 'button';
+  stepBackBtn.className = 'pi-viz-step-btn';
+  stepBackBtn.textContent = '<';
+  stepBackBtn.title = 'Step back';
+
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.className = 'pi-viz-step-btn pi-viz-play-btn';
+  playBtn.textContent = '\u25B6';
+  playBtn.title = 'Play';
+
+  const stepForwardBtn = document.createElement('button');
+  stepForwardBtn.type = 'button';
+  stepForwardBtn.className = 'pi-viz-step-btn';
+  stepForwardBtn.textContent = '>';
+  stepForwardBtn.title = 'Step forward';
+
+  const stepRow = el('div', 'pi-viz-step-row');
+  const stepCounterEl = el('span', 'pi-viz-step-counter');
+  stepCounterEl.textContent = '1/1';
+  stepCounterEl.setAttribute('aria-label', 'Current step');
+  stepRow.append(
+    goToStartBtn,
+    stepBackBtn,
+    playBtn,
+    stepForwardBtn,
+    stepCounterEl
+  );
+
+  return {
+    stepRow,
+    goToStartBtn,
+    stepBackBtn,
+    playBtn,
+    stepForwardBtn,
+    stepCounterEl
+  };
 }
 
 export function createDPVizDom(
@@ -227,12 +283,6 @@ export function createDPVizDom(
     ...extraCheckboxWraps
   );
 
-  const goToStartBtn = document.createElement('button');
-  goToStartBtn.type = 'button';
-  goToStartBtn.className = 'pi-viz-step-btn';
-  goToStartBtn.textContent = '\u23EE';
-  goToStartBtn.title = 'Go to start';
-
   const resetBtn = document.createElement('button');
   resetBtn.type = 'button';
   resetBtn.className = 'pi-viz-step-btn pi-viz-reset-btn';
@@ -240,35 +290,14 @@ export function createDPVizDom(
   resetBtn.title = 'Reset';
   initialValuesOptions.append(resetBtn);
 
-  const stepBackBtn = document.createElement('button');
-  stepBackBtn.type = 'button';
-  stepBackBtn.className = 'pi-viz-step-btn';
-  stepBackBtn.textContent = '<';
-  stepBackBtn.title = 'Step back';
-
-  const playBtn = document.createElement('button');
-  playBtn.type = 'button';
-  playBtn.className = 'pi-viz-step-btn pi-viz-play-btn';
-  playBtn.textContent = '\u25B6';
-  playBtn.title = 'Play';
-
-  const stepForwardBtn = document.createElement('button');
-  stepForwardBtn.type = 'button';
-  stepForwardBtn.className = 'pi-viz-step-btn';
-  stepForwardBtn.textContent = '>';
-  stepForwardBtn.title = 'Step forward';
-
-  const stepRow = el('div', 'pi-viz-step-row');
-  const stepCounterEl = el('span', 'pi-viz-step-counter');
-  stepCounterEl.textContent = '1/1';
-  stepCounterEl.setAttribute('aria-label', 'Current step');
-  stepRow.append(
+  const {
+    stepRow,
     goToStartBtn,
     stepBackBtn,
     playBtn,
     stepForwardBtn,
     stepCounterEl
-  );
+  } = createTimelineStepControls();
 
   controlsCol.append(stepRow);
   middleCol.append(paramsStack);

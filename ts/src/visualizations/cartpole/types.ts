@@ -4,6 +4,8 @@
 export interface CartPoleVizDom {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
+  actionChartCanvas: HTMLCanvasElement;
+  timelineCanvas: HTMLCanvasElement;
   terminalOverlay: HTMLDivElement;
   terminalTitle: HTMLElement;
   terminalSummary: HTMLElement;
@@ -13,14 +15,11 @@ export interface CartPoleVizDom {
   velocityValue: HTMLElement;
   angleValue: HTMLElement;
   angularVelocityValue: HTMLElement;
-  qLeftValue: HTMLElement;
-  qRightValue: HTMLElement;
-  qLeftBar: HTMLElement;
-  qRightBar: HTMLElement;
-  qLeftRow: HTMLElement;
-  qRightRow: HTMLElement;
-  actionValue: HTMLElement;
-  pauseBtn: HTMLButtonElement;
+  goToStartBtn: HTMLButtonElement;
+  stepBackBtn: HTMLButtonElement;
+  playBtn: HTMLButtonElement;
+  stepForwardBtn: HTMLButtonElement;
+  stepCounterEl: HTMLElement;
   resetBtn: HTMLButtonElement;
   speedSlider: HTMLInputElement;
   speedValueEl: HTMLElement;

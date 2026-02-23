@@ -575,9 +575,24 @@
   background: var(--color-surface);
   padding: 16px;
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: stretch;
+  align-items: center;
   border-radius: 0;
+}
+
+.cartpole-viz-top-row {
+  width: min(100%, 800px);
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+}
+
+.cartpole-viz-bottom-panel {
+  width: min(100%, 800px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .cartpole-viz-canvas-wrap {
@@ -633,10 +648,11 @@
 
 .cartpole-viz-side-panel {
   flex: 0 0 200px;
+  min-width: 0;
   width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .cartpole-viz-side-panel .section {
@@ -644,6 +660,17 @@
   width: 100%;
   box-sizing: border-box;
   padding: 4px;
+}
+
+.cartpole-viz-bottom-panel .section {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 4px;
+}
+
+.cartpole-viz-state-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .cartpole-viz-buttons-section {
@@ -668,8 +695,13 @@
 }
 
 @media (width <= 900px) {
-  #cartpole-visualization > div {
+  .cartpole-viz-top-row {
+    width: 100%;
     flex-direction: column;
+  }
+
+  .cartpole-viz-bottom-panel {
+    width: 100%;
   }
 
   .cartpole-viz-side-panel {
@@ -680,94 +712,17 @@
 
 /* CartPole policy visualization */
 
-.cp-policy-q-row {
+.cp-policy-chart-stack {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 0;
-  border-radius: 3px;
-  transition: background 0.1s;
-}
-
-.cp-policy-q-row.is-chosen {
-  background: #f0fdf4;
-}
-
-.cp-policy-q-action-label {
-  flex: 0 0 44px;
-  font-size: 10px;
-  color: var(--color-text-subtle);
-  text-align: right;
-}
-
-.cp-policy-q-bar-wrap {
-  flex: 1 1 auto;
-  height: 8px;
-  background: var(--color-surface-muted);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-}
-
-.cp-policy-q-bar {
-  height: 100%;
-  background: #94a3b8;
-  border-radius: 4px;
-  width: 50%;
-  transition: width 0.05s linear;
-}
-
-.cp-policy-q-row.is-chosen .cp-policy-q-bar {
-  background: #22c55e;
-}
-
-.cp-policy-q-value {
-  flex: 0 0 36px;
-  text-align: right;
-  font-size: 10px;
-}
-
-.cp-policy-action-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-  padding: 0 2px;
-}
-
-.cp-policy-action-value {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.cp-policy-action-value.is-left {
-  color: #2563eb;
-}
-
-.cp-policy-action-value.is-right {
-  color: #dc2626;
-}
-
-.cp-policy-btn-row {
-  display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
   width: 100%;
 }
 
-.cp-policy-pause-btn {
-  flex: 1;
-  font-size: 11px;
-  padding: 2px 8px;
-  background: #e0e7ff;
-  border-color: #818cf8;
+.cp-policy-action-chart {
+  height: 50px;
 }
 
-.cp-policy-reset-btn {
-  flex: 1;
-}
-
-@media (width <= 900px) {
-  #cartpole-visualization > div {
-    flex-direction: column;
-  }
+.cp-policy-timeline-chart {
+  height: 26px;
 }

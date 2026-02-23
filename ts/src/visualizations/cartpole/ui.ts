@@ -1,13 +1,22 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
+import { createTimelineStepControls } from '../shared/ui';
 import type { CartPoleVizDom } from './types';
 
 const DEFAULT_SPEED = 1;
+const TRAJECTORY_CHART_WIDTH = 1000;
+const SPEED_SLIDER_MIN = 0;
+const SPEED_SLIDER_MAX = 100;
+const SPEED_SLIDER_DEFAULT = 50;
 
 export function createCartPoleVizDom(): CartPoleVizDom {
   const container = document.createElement('div');
   container.className = 'visualization';
+  const topRow = document.createElement('div');
+  topRow.className = 'cartpole-viz-top-row';
+  const bottomPanel = document.createElement('div');
+  bottomPanel.className = 'cartpole-viz-bottom-panel';
 
   const canvas = document.createElement('canvas');
   canvas.className = 'cartpole-viz-canvas';
@@ -32,7 +41,7 @@ export function createCartPoleVizDom(): CartPoleVizDom {
   const sidePanel = document.createElement('div');
   sidePanel.className = 'cartpole-viz-side-panel';
 
-  // Episode + steps stat cards
+  // Row 1: episode + steps
   const statsSection = document.createElement('div');
   statsSection.className = 'section';
   const statGrid = document.createElement('div');
@@ -59,11 +68,11 @@ export function createCartPoleVizDom(): CartPoleVizDom {
   statGrid.append(episodesCard, stepsCard);
   statsSection.appendChild(statGrid);
 
-  // State section
+  // Row 2: position + velocity + angle + angular velocity
   const stateSection = document.createElement('div');
   stateSection.className = 'section';
   const stateGrid = document.createElement('div');
-  stateGrid.className = 'stat-grid';
+  stateGrid.className = 'stat-grid cartpole-viz-state-grid';
 
   const positionCard = document.createElement('div');
   positionCard.className = 'stat-card';
@@ -104,61 +113,38 @@ export function createCartPoleVizDom(): CartPoleVizDom {
   stateGrid.append(positionCard, velocityCard, angleCard, angVelCard);
   stateSection.appendChild(stateGrid);
 
-  // Q-values section
-  const qSection = document.createElement('div');
-  qSection.className = 'section';
+  // Action chart + timeline (wide row under top section)
+  const chartSection = document.createElement('div');
+  chartSection.className = 'section cp-policy-chart-stack';
 
-  const qLabel = document.createElement('div');
-  qLabel.className = 'label';
-  qLabel.style.marginBottom = '4px';
-  qLabel.textContent = 'Q-values';
+  const actionChartCanvas = document.createElement('canvas');
+  actionChartCanvas.className = 'pi-viz-chart pi-viz-scrub-chart cp-policy-action-chart';
+  actionChartCanvas.width = TRAJECTORY_CHART_WIDTH;
+  actionChartCanvas.height = 50;
 
-  const qLeftRow = document.createElement('div');
-  qLeftRow.className = 'cp-policy-q-row';
-  const qLeftLabel = document.createElement('span');
-  qLeftLabel.className = 'cp-policy-q-action-label';
-  qLeftLabel.textContent = '\u2190 Left';
-  const qLeftBarWrap = document.createElement('div');
-  qLeftBarWrap.className = 'cp-policy-q-bar-wrap';
-  const qLeftBar = document.createElement('div');
-  qLeftBar.className = 'cp-policy-q-bar';
-  qLeftBarWrap.appendChild(qLeftBar);
-  const qLeftValue = document.createElement('span');
-  qLeftValue.className = 'cp-policy-q-value mono-value';
-  qLeftValue.textContent = '0.00';
-  qLeftRow.append(qLeftLabel, qLeftBarWrap, qLeftValue);
+  const timelineCanvas = document.createElement('canvas');
+  timelineCanvas.className = 'pi-viz-chart pi-viz-timeline-chart cp-policy-timeline-chart';
+  timelineCanvas.width = TRAJECTORY_CHART_WIDTH;
+  timelineCanvas.height = 26;
 
-  const qRightRow = document.createElement('div');
-  qRightRow.className = 'cp-policy-q-row';
-  const qRightLabel = document.createElement('span');
-  qRightLabel.className = 'cp-policy-q-action-label';
-  qRightLabel.textContent = 'Right \u2192';
-  const qRightBarWrap = document.createElement('div');
-  qRightBarWrap.className = 'cp-policy-q-bar-wrap';
-  const qRightBar = document.createElement('div');
-  qRightBar.className = 'cp-policy-q-bar';
-  qRightBarWrap.appendChild(qRightBar);
-  const qRightValue = document.createElement('span');
-  qRightValue.className = 'cp-policy-q-value mono-value';
-  qRightValue.textContent = '0.00';
-  qRightRow.append(qRightLabel, qRightBarWrap, qRightValue);
+  chartSection.append(actionChartCanvas, timelineCanvas);
 
-  const actionRow = document.createElement('div');
-  actionRow.className = 'cp-policy-action-row';
-  const actionLabel = document.createElement('span');
-  actionLabel.className = 'label';
-  actionLabel.textContent = 'Action';
-  const actionValue = document.createElement('strong');
-  actionValue.className = 'cp-policy-action-value';
-  actionValue.textContent = '\u2192';
-  actionRow.append(actionLabel, actionValue);
-
-  qSection.append(qLabel, qLeftRow, qRightRow, actionRow);
-
-  // Controls: speed slider + pause + reset
+  // Controls: timeline navigation
   const controlsSection = document.createElement('div');
   controlsSection.className = 'section controls-stack';
 
+  const {
+    stepRow,
+    goToStartBtn,
+    stepBackBtn,
+    playBtn,
+    stepForwardBtn,
+    stepCounterEl
+  } = createTimelineStepControls();
+
+  // Row 3: speed slider
+  const speedSection = document.createElement('div');
+  speedSection.className = 'section';
   const sliderWrap = document.createElement('div');
   sliderWrap.className = 'slider-wrap';
   const sliderLabel = document.createElement('div');
@@ -172,36 +158,41 @@ export function createCartPoleVizDom(): CartPoleVizDom {
 
   const speedSlider = document.createElement('input');
   speedSlider.type = 'range';
-  speedSlider.min = '1';
-  speedSlider.max = '8';
+  speedSlider.min = String(SPEED_SLIDER_MIN);
+  speedSlider.max = String(SPEED_SLIDER_MAX);
   speedSlider.step = '1';
-  speedSlider.value = String(DEFAULT_SPEED);
+  speedSlider.value = String(SPEED_SLIDER_DEFAULT);
   speedSlider.setAttribute('aria-label', 'Simulation speed');
   sliderWrap.append(sliderLabel, speedSlider);
+  speedSection.appendChild(sliderWrap);
 
-  const btnRow = document.createElement('div');
-  btnRow.className = 'cp-policy-btn-row';
-
-  const pauseBtn = document.createElement('button');
-  pauseBtn.className = 'cp-policy-pause-btn';
-  pauseBtn.type = 'button';
-  pauseBtn.textContent = 'Pause';
-
+  // Row 4: new trajectory button
+  const resetSection = document.createElement('div');
+  resetSection.className = 'section';
   const resetBtn = document.createElement('button');
-  resetBtn.className = 'control-reset cp-policy-reset-btn';
+  resetBtn.className = 'control-reset';
   resetBtn.type = 'button';
-  resetBtn.textContent = 'Reset';
+  resetBtn.textContent = 'New trajectory';
+  resetSection.appendChild(resetBtn);
 
-  btnRow.append(pauseBtn, resetBtn);
-  controlsSection.append(sliderWrap, btnRow);
+  controlsSection.append(stepRow);
 
-  sidePanel.append(statsSection, stateSection, qSection, controlsSection);
+  sidePanel.append(
+    statsSection,
+    stateSection,
+    speedSection,
+    resetSection
+  );
   canvasWrap.append(canvas, terminalOverlay);
-  container.append(canvasWrap, sidePanel);
+  topRow.append(canvasWrap, sidePanel);
+  bottomPanel.append(chartSection, controlsSection);
+  container.append(topRow, bottomPanel);
 
   return {
     container,
     canvas,
+    actionChartCanvas,
+    timelineCanvas,
     terminalOverlay,
     terminalTitle,
     terminalSummary,
@@ -211,14 +202,11 @@ export function createCartPoleVizDom(): CartPoleVizDom {
     velocityValue,
     angleValue,
     angularVelocityValue,
-    qLeftValue,
-    qRightValue,
-    qLeftBar,
-    qRightBar,
-    qLeftRow,
-    qRightRow,
-    actionValue,
-    pauseBtn,
+    goToStartBtn,
+    stepBackBtn,
+    playBtn,
+    stepForwardBtn,
+    stepCounterEl,
     resetBtn,
     speedSlider,
     speedValueEl
