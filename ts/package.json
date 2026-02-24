@@ -32,6 +32,7 @@
     "./visualizations/value-iteration-v": "./src/visualizations/value-iteration-v/index.ts",
     "./visualizations/value-iteration-q": "./src/visualizations/value-iteration-q/index.ts",
     "./visualizations/monte-carlo": "./src/visualizations/monte-carlo/index.ts",
-    "./visualizations/cartpole": "./src/visualizations/cartpole/index.ts"
+    "./visualizations/cartpole": "./src/visualizations/cartpole/index.ts",
+    "./visualizations/pong": "./src/visualizations/pong/index.ts"
   }
 }

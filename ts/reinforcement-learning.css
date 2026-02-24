@@ -726,3 +726,105 @@
 .cp-policy-timeline-chart {
   height: 26px;
 }
+
+/* Pong visualization */
+
+.pong-viz-container {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0;
+  background: #0d0d1a;
+}
+
+.pong-viz-canvas-wrap {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.pong-viz-canvas {
+  display: block;
+  outline: none;
+}
+
+.pong-viz-canvas:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 30%);
+  outline-offset: -2px;
+}
+
+.pong-viz-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 60%);
+}
+
+.pong-viz-overlay[hidden] {
+  display: none;
+}
+
+.pong-viz-overlay-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 32px;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 8px;
+}
+
+.pong-viz-overlay-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+}
+
+.pong-viz-overlay-panel button {
+  background: rgb(255 255 255 / 12%);
+  border: 1px solid rgb(255 255 255 / 25%);
+  color: #fff;
+  font-size: 14px;
+  padding: 8px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pong-viz-overlay-panel button:hover {
+  background: rgb(255 255 255 / 20%);
+}
+
+.pong-viz-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: #0d0d1a;
+}
+
+.pong-viz-player-label {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: monospace;
+  color: #28eb58;
+  min-width: 36px;
+}
+
+.pong-viz-hint {
+  font-size: 11px;
+  color: #44445a;
+  font-family: monospace;
+}
+
+.pong-viz-cpu-label {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: monospace;
+  color: #eb3528;
+  min-width: 36px;
+  text-align: right;
+}

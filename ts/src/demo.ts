@@ -17,6 +17,7 @@ import {
 import {
   initPolicyIterationVVisualization,
   type PolicyIterationVVisualization } from './visualizations/policy-iteration-v';
+import { initPongVisualization, type PongVisualization } from './visualizations/pong';
 import {
   initValueIterationQVisualization,
   type ValueIterationQVisualization
@@ -27,6 +28,7 @@ import {
 } from './visualizations/value-iteration-v';
 
 let cartpoleVisualization: CartPoleVisualization | null = null;
+let pongVisualization: PongVisualization | null = null;
 let gridworldVisualization: GridworldVisualization | null = null;
 let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
@@ -35,6 +37,12 @@ let valueIterationQVisualization: ValueIterationQVisualization | null = null;
 let monteCarloVisualization: MonteCarloVisualization | null = null;
 
 function initialize(): void {
+  const pongPanel = document.getElementById('pong-visualization');
+  if (pongPanel) {
+    pongVisualization?.destroy();
+    pongVisualization = initPongVisualization(pongPanel);
+  }
+
   const cartpolePolicyPanel = document.getElementById(
     'cartpole-visualization'
   );
