@@ -14,6 +14,10 @@ import {
   type MonteCarloVisualization
 } from './visualizations/monte-carlo';
 import {
+  initPixelPongVisualization,
+  type PixelPongVisualization
+} from './visualizations/pixel-pong';
+import {
   initPolicyIterationQVisualization,
   type PolicyIterationQVisualization
 } from './visualizations/policy-iteration-q';
@@ -38,6 +42,7 @@ import {
 let cartpoleVisualization: CartPoleVisualization | null = null;
 let pongVisualization: PongVisualization | null = null;
 let pongPolicyVisualization: PongPolicyVisualization | null = null;
+let pixelPongVisualization: PixelPongVisualization | null = null;
 let gridworldVisualization: GridworldVisualization | null = null;
 let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
@@ -68,6 +73,12 @@ function initialize(): void {
           'Pong policy: weights not found (place pong-weights.safetensors in ts/public/)';
       }
     });
+  }
+
+  const pixelPongPanel = document.getElementById('pixel-pong-visualization');
+  if (pixelPongPanel) {
+    pixelPongVisualization?.destroy();
+    pixelPongVisualization = initPixelPongVisualization(pixelPongPanel);
   }
 
   const cartpolePolicyPanel = document.getElementById(

@@ -35,6 +35,7 @@
     "./visualizations/monte-carlo": "./src/visualizations/monte-carlo/index.ts",
     "./visualizations/cartpole": "./src/visualizations/cartpole/index.ts",
     "./visualizations/pong": "./src/visualizations/pong/index.ts",
-    "./visualizations/pong-policy": "./src/visualizations/pong-policy/index.ts"
+    "./visualizations/pong-policy": "./src/visualizations/pong-policy/index.ts",
+    "./visualizations/pixel-pong": "./src/visualizations/pixel-pong/index.ts"
   }
 }
