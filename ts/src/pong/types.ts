@@ -13,6 +13,8 @@ export interface PongState {
   time: number;
 }
 
+export type PongPlayer = (state: PongState) => PongAction;
+
 export interface PongStepResult {
   state: PongState;
   done: boolean;

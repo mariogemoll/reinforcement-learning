@@ -1,8 +1,55 @@
 # SPDX-FileCopyrightText: 2026 Mario Gemoll
 # SPDX-License-Identifier: 0BSD
 
+import json
+import struct
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any, cast
+
+import jax
+import numpy as np
+
+
+def as_f32(value: object) -> np.ndarray:
+    """Convert a JAX array or NNX Variable to a float32 numpy array."""
+    if hasattr(value, "__getitem__"):
+        try:
+            value = value[...]
+        except Exception:
+            pass
+    elif hasattr(value, "get_value"):
+        value = value.get_value()
+    return np.asarray(jax.device_get(value), dtype=np.float32)
+
+
+def write_safetensors(path: Path, tensors: dict[str, np.ndarray]) -> None:
+    """Write a minimal safetensors file containing float32 tensors."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    normalized = {
+        name: np.ascontiguousarray(arr, dtype=np.float32) for name, arr in tensors.items()
+    }
+
+    header: dict[str, object] = {}
+    offset = 0
+    for name, arr in normalized.items():
+        size = arr.nbytes
+        header[name] = {
+            "dtype": "F32",
+            "shape": list(arr.shape),
+            "data_offsets": [offset, offset + size],
+        }
+        offset += size
+
+    header_bytes = json.dumps(header, separators=(",", ":")).encode("utf-8")
+    header_bytes += b" " * ((8 - (len(header_bytes) % 8)) % 8)
+
+    with path.open("wb") as f:
+        f.write(struct.pack("<Q", len(header_bytes)))
+        f.write(header_bytes)
+        for arr in normalized.values():
+            f.write(arr.tobytes(order="C"))
 
 
 def _to_list(values: object) -> list[float]:
@@ -201,9 +248,7 @@ def eval_pong_ql_score(
             next_features = pong.extract_features(next_env_state)
 
             features = jnp.where(done, features, next_features)
-            env_state = jax.tree.map(
-                lambda n, o: jnp.where(done, o, n), next_env_state, env_state
-            )
+            env_state = jax.tree.map(lambda n, o: jnp.where(done, o, n), next_env_state, env_state)
             score = score + jnp.where(done, 0.0, reward)
             done = jnp.logical_or(done, step_done)
             return (features, env_state, done, score, key), None

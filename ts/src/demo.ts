@@ -5,7 +5,10 @@ import {
   type CartPoleVisualization,
   initCartPoleVisualization
 } from './visualizations/cartpole';
-import { type GridworldVisualization,initGridworldVisualization } from './visualizations/gridworld';
+import {
+  type GridworldVisualization,
+  initGridworldVisualization
+} from './visualizations/gridworld';
 import {
   initMonteCarloVisualization,
   type MonteCarloVisualization
@@ -16,8 +19,13 @@ import {
 } from './visualizations/policy-iteration-q';
 import {
   initPolicyIterationVVisualization,
-  type PolicyIterationVVisualization } from './visualizations/policy-iteration-v';
+  type PolicyIterationVVisualization
+} from './visualizations/policy-iteration-v';
 import { initPongVisualization, type PongVisualization } from './visualizations/pong';
+import {
+  initPongPolicyVisualization,
+  type PongPolicyVisualization
+} from './visualizations/pong-policy';
 import {
   initValueIterationQVisualization,
   type ValueIterationQVisualization
@@ -29,6 +37,7 @@ import {
 
 let cartpoleVisualization: CartPoleVisualization | null = null;
 let pongVisualization: PongVisualization | null = null;
+let pongPolicyVisualization: PongPolicyVisualization | null = null;
 let gridworldVisualization: GridworldVisualization | null = null;
 let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
@@ -41,6 +50,24 @@ function initialize(): void {
   if (pongPanel) {
     pongVisualization?.destroy();
     pongVisualization = initPongVisualization(pongPanel);
+  }
+
+  const pongPolicyPanel = document.getElementById('pong-policy-visualization');
+  if (pongPolicyPanel) {
+    pongPolicyVisualization?.destroy();
+    pongPolicyVisualization = null;
+    void initPongPolicyVisualization(
+      pongPolicyPanel,
+      '/public/pong-weights.safetensors'
+    ).then(viz => {
+      pongPolicyVisualization = viz;
+    }).catch(() => {
+      const placeholder = pongPolicyPanel.querySelector('.placeholder');
+      if (placeholder) {
+        placeholder.textContent =
+          'Pong policy: weights not found (place pong-weights.safetensors in ts/public/)';
+      }
+    });
   }
 
   const cartpolePolicyPanel = document.getElementById(

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: 0BSD
 
 import { loadSafetensors } from '../shared/safetensors';
-import type { CartPoleAction, CartPoleState } from './types';
+import type { PongAction, PongState } from './types';
 
 function linear(input: number[], w: Float32Array, b: Float32Array): number[] {
   const outDim = b.length;
@@ -22,18 +22,25 @@ function relu(x: number[]): number[] {
   return x.map(v => Math.max(0, v));
 }
 
-export interface DqnOutput {
-  qLeft: number;
-  qRight: number;
-  action: CartPoleAction;
+function extractFeatures(state: PongState): number[] {
+  // Mirrors extract_features() in py/pong.py — normalised to ~[-1, 1].
+  return [
+    state.p1Center / 15 - 1,
+    state.p2Center / 15 - 1,
+    state.ballRow  / 15 - 1,
+    state.ballCol  / 20 - 1,
+    state.ballVRow / 3,
+    state.ballVCol
+  ];
 }
 
-export type DqnPolicy = (state: Readonly<CartPoleState>) => DqnOutput;
+export interface PongQValues { noop: number; up: number; down: number; }
 
-export async function loadDqnPolicy(url: string): Promise<DqnPolicy> {
+export type PongNNPolicy = (state: PongState) => { qValues: PongQValues; action: PongAction };
+
+export async function loadPongNNPolicy(url: string): Promise<PongNNPolicy> {
   const tensors = await loadSafetensors(url);
 
-  // Load all layers: w0/b0, w1/b1, ... until a key is missing.
   const layers: { w: Float32Array; b: Float32Array }[] = [];
   for (let i = 0; ; i++) {
     const wKey = `w${String(i)}`;
@@ -42,13 +49,17 @@ export async function loadDqnPolicy(url: string): Promise<DqnPolicy> {
     layers.push({ w: tensors[wKey], b: tensors[bKey] });
   }
 
-  return (state: Readonly<CartPoleState>): DqnOutput => {
-    let x: number[] = [state[0], state[1], state[2], state[3]];
+  return (state: PongState): { qValues: PongQValues; action: PongAction } => {
+    let x = extractFeatures(state);
     for (let i = 0; i < layers.length - 1; i++) {
       x = relu(linear(x, layers[i].w, layers[i].b));
     }
     const q = linear(x, layers[layers.length - 1].w, layers[layers.length - 1].b);
-    const action: CartPoleAction = q[1] > q[0] ? 1 : 0;
-    return { qLeft: q[0], qRight: q[1], action };
+    const qValues: PongQValues = { noop: q[0], up: q[1], down: q[2] };
+    let best = 0;
+    if (q[1] > q[best]) {best = 1;}
+    if (q[2] > q[best]) {best = 2;}
+    const action = best as PongAction;
+    return { qValues, action };
   };
 }

@@ -45,9 +45,10 @@ print("Ready.")
 # Colours
 # ---------------------------------------------------------------------------
 BG_C = np.array([0.05, 0.05, 0.10])
-PLAYER_C = np.array([0.25, 0.92, 0.35])   # green  — left paddle  (you)
-AI_C = np.array([0.92, 0.25, 0.25])        # red    — right paddle (cpu)
-BALL_C = np.array([1.00, 1.00, 1.00])      # white
+PLAYER_C = np.array([0.25, 0.92, 0.35])  # green  — left paddle  (you)
+AI_C = np.array([0.92, 0.25, 0.25])  # red    — right paddle (cpu)
+BALL_C = np.array([1.00, 1.00, 1.00])  # white
+
 
 # ---------------------------------------------------------------------------
 # Renderer
@@ -94,6 +95,7 @@ ax_score = fig.add_axes([0.0, 0.00, 1.0, 0.10])
 ax_score.set_facecolor("black")
 ax_score.axis("off")
 
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -125,35 +127,65 @@ start_episode()
 img = ax_game.imshow(render_state(state), interpolation="nearest", aspect="auto")
 
 hint = ax_game.text(
-    0.5, 0.01, "W / ↑  up     S / ↓  down",
-    ha="center", va="bottom", fontsize=9, color="#44445a",
+    0.5,
+    0.01,
+    "W / ↑  up     S / ↓  down",
+    ha="center",
+    va="bottom",
+    fontsize=9,
+    color="#44445a",
     transform=ax_game.transAxes,
 )
 
 overlay = ax_game.text(
-    0.5, 0.5, "",
-    ha="center", va="center", fontsize=22, color="white",
-    fontfamily="monospace", fontweight="bold",
-    transform=ax_game.transAxes, alpha=0.0,
+    0.5,
+    0.5,
+    "",
+    ha="center",
+    va="center",
+    fontsize=22,
+    color="white",
+    fontfamily="monospace",
+    fontweight="bold",
+    transform=ax_game.transAxes,
+    alpha=0.0,
     linespacing=1.8,
 )
 
 ax_score.text(
-    0.22, 0.5, "YOU",
-    ha="center", va="center", fontsize=13, color=PLAYER_C,
-    fontfamily="monospace", fontweight="bold",
+    0.22,
+    0.5,
+    "YOU",
+    ha="center",
+    va="center",
+    fontsize=13,
+    color=PLAYER_C,
+    fontfamily="monospace",
+    fontweight="bold",
     transform=ax_score.transAxes,
 )
 score_text = ax_score.text(
-    0.50, 0.5, "0  :  0",
-    ha="center", va="center", fontsize=20, color="white",
-    fontfamily="monospace", fontweight="bold",
+    0.50,
+    0.5,
+    "0  :  0",
+    ha="center",
+    va="center",
+    fontsize=20,
+    color="white",
+    fontfamily="monospace",
+    fontweight="bold",
     transform=ax_score.transAxes,
 )
 ax_score.text(
-    0.78, 0.5, "CPU",
-    ha="center", va="center", fontsize=13, color=AI_C,
-    fontfamily="monospace", fontweight="bold",
+    0.78,
+    0.5,
+    "CPU",
+    ha="center",
+    va="center",
+    fontsize=13,
+    color=AI_C,
+    fontfamily="monospace",
+    fontweight="bold",
     transform=ax_score.transAxes,
 )
 
@@ -220,9 +252,9 @@ def update(_frame):
 
     if bool(np.array(done)):
         ball_col = float(np.array(new_state.ball_position[1]))
-        if ball_col >= env.width:   # right paddle (AI) missed
+        if ball_col >= env.width:  # right paddle (AI) missed
             player_score += 1
-        else:                        # left paddle (player) missed
+        else:  # left paddle (player) missed
             ai_score += 1
         score_text.set_text(f"{player_score}  :  {ai_score}")
 

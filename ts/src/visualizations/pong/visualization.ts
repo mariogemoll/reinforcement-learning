@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
-import { ENV_WIDTH, resetPongState, stepPongState } from '../../pong/environment';
+import {
+  computerPongPlayer,
+  ENV_WIDTH,
+  resetPongState,
+  stepPongState
+} from '../../pong/environment';
 import type { PongAction, PongState } from '../../pong/types';
 import { wireEvents } from '../shared/event-wiring';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, renderPong } from './renderer';
@@ -39,7 +44,7 @@ export function initializePongVisualization(parent: HTMLElement): PongVisualizat
   let intervalId: number | null = null;
 
   const render = (): void => {
-    renderPong(canvas, state, playerScore, aiScore);
+    renderPong(canvas, state, playerScore, aiScore, '#28eb58', '#eb3528');
   };
 
   const startEpisode = (): void => {
@@ -55,7 +60,7 @@ export function initializePongVisualization(parent: HTMLElement): PongVisualizat
   };
 
   const tick = (): void => {
-    const { state: nextState, done } = stepPongState(state, action);
+    const { state: nextState, done } = stepPongState(state, action, computerPongPlayer(state));
 
     if (done) {
       if (nextState.ballCol >= ENV_WIDTH) {

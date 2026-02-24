@@ -5,7 +5,7 @@
 // Physics order: move paddles → move ball → reflect walls → reflect paddles.
 // The top-wall reflection is missing in gymnax and is added here.
 
-import type { PongAction, PongState, PongStepResult } from './types';
+import type { PongAction, PongPlayer, PongState, PongStepResult } from './types';
 
 export const ENV_WIDTH = 40;
 export const ENV_HEIGHT = 30;
@@ -32,18 +32,9 @@ export function resetPongState(initVY: 1 | -1): PongState {
   };
 }
 
-export function stepPongState(state: PongState, action: PongAction): PongStepResult {
-  const { ballRow, ballCol, ballVRow, ballVCol, p1Center, p2Center, time } = state;
-
-  // --- Move paddles ---
-  const paddleStep = (action === 2 ? 1 : 0) - (action === 1 ? 1 : 0);
-  const newP1 = clamp(
-    p1Center + paddleStep * PADDLE_Y_SPEED,
-    PADDLE_HALF_HEIGHT,
-    ENV_HEIGHT - PADDLE_HALF_HEIGHT - 1
-  );
-
-  // AI: move whichever direction minimises distance to ball
+// Greedy computer AI: always moves toward the ball.
+export const computerPongPlayer: PongPlayer = (state: PongState): PongAction => {
+  const { ballRow, p2Center } = state;
   const distIfDown = Math.abs(
     ballRow -
       clamp(
@@ -60,8 +51,27 @@ export function stepPongState(state: PongState, action: PongAction): PongStepRes
         ENV_HEIGHT - PADDLE_HALF_HEIGHT - 1
       )
   );
+  return distIfUp < distIfDown ? 1 : 2;
+};
+
+export function stepPongState(
+  state: PongState,
+  p1Action: PongAction,
+  p2Action: PongAction
+): PongStepResult {
+  const { ballRow, ballCol, ballVRow, ballVCol, p1Center, p2Center, time } = state;
+
+  // --- Move paddles ---
+  const p1Step = (p1Action === 2 ? 1 : 0) - (p1Action === 1 ? 1 : 0);
+  const newP1 = clamp(
+    p1Center + p1Step * PADDLE_Y_SPEED,
+    PADDLE_HALF_HEIGHT,
+    ENV_HEIGHT - PADDLE_HALF_HEIGHT - 1
+  );
+
+  const p2Step = (p2Action === 2 ? 1 : 0) - (p2Action === 1 ? 1 : 0);
   const newP2 = clamp(
-    p2Center + (distIfUp < distIfDown ? -PADDLE_Y_SPEED : PADDLE_Y_SPEED),
+    p2Center + p2Step * PADDLE_Y_SPEED,
     PADDLE_HALF_HEIGHT,
     ENV_HEIGHT - PADDLE_HALF_HEIGHT - 1
   );

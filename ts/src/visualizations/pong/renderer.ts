@@ -10,8 +10,6 @@ export const CANVAS_WIDTH  = ENV_WIDTH  * CELL;
 export const CANVAS_HEIGHT = ENV_HEIGHT * CELL;
 
 const BG_COLOR      = '#0d0d1a';
-const PLAYER_COLOR  = '#28eb58'; // green — left paddle (you)
-const AI_COLOR      = '#eb3528'; // red   — right paddle (cpu)
 const BALL_COLOR    = '#ffffff';
 const DIVIDER_COLOR = 'rgba(255,255,255,0.10)';
 const SCORE_COLOR   = '#ffffff';
@@ -20,7 +18,9 @@ export function renderPong(
   canvas: HTMLCanvasElement,
   state: PongState,
   playerScore: number,
-  aiScore: number
+  aiScore: number,
+  p1Color: string,
+  p2Color: string
 ): void {
   const ctx = canvas.getContext('2d');
   if (ctx === null) {return;}
@@ -40,8 +40,8 @@ export function renderPong(
   ctx.setLineDash([]);
 
   // Paddles
-  drawPaddle(ctx, 0, Math.round(state.p1Center), PLAYER_COLOR);
-  drawPaddle(ctx, ENV_WIDTH - 1, Math.round(state.p2Center), AI_COLOR);
+  drawPaddle(ctx, 0, Math.round(state.p1Center), p1Color);
+  drawPaddle(ctx, ENV_WIDTH - 1, Math.round(state.p2Center), p2Color);
 
   // Ball
   const ballC = Math.max(0, Math.min(ENV_WIDTH  - 1, Math.floor(state.ballCol)));

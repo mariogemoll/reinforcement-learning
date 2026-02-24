@@ -3,6 +3,10 @@
 
 import functools
 import warnings
+from pathlib import Path
+
+import anywidget
+import traitlets
 
 import gymnax
 import jax
@@ -60,9 +64,9 @@ def extract_features(state):
     ball_col = state.ball_position[1] / (_WIDTH / 2) - 1.0
     ball_vy = state.ball_velocity[0].astype(jnp.float32) / _MAX_SPEED
     ball_vx = state.ball_velocity[1].astype(jnp.float32)
-    return jnp.stack(
-        [our_paddle, opp_paddle, ball_row, ball_col, ball_vy, ball_vx]
-    ).astype(jnp.float32)
+    return jnp.stack([our_paddle, opp_paddle, ball_row, ball_col, ball_vy, ball_vx]).astype(
+        jnp.float32
+    )
 
 
 class QNetwork(nnx.Module):
@@ -128,9 +132,7 @@ def _make_runner(total_steps, hidden_dim, num_layers):
         rand_a = jax.random.randint(kr, shape=(), minval=0, maxval=NUM_ACTIONS)
         action = jax.lax.select(jax.random.uniform(ka) > eps, greedy, rand_a)
 
-        _, next_env_state, reward, done, _ = env.step(
-            ks, carry["env_state"], action, env_params
-        )
+        _, next_env_state, reward, done, _ = env.step(ks, carry["env_state"], action, env_params)
         next_obs = extract_features(next_env_state)
 
         timeout = carry["ep_len"] + 1 >= env_params.max_steps_in_episode
@@ -226,3 +228,10 @@ def __getattr__(name):
     if name == "env_params":
         return _get_env_bundle()[1]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+class PongVisualization(anywidget.AnyWidget):
+    _esm = Path(__file__).parent / "dist" / "pong-visualization.js"
+    _css = (Path(__file__).parent.parent / "ts" / "reinforcement-learning.css").read_text()
+
+    weights_base64 = traitlets.Unicode("").tag(sync=True)

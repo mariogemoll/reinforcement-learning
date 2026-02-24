@@ -6,6 +6,7 @@
     "dev": "esbuild src/demo.ts --bundle --format=esm --sourcemap --outfile=dist/main.js --watch --servedir=.",
     "build": "esbuild src/demo.ts --bundle --format=esm --minify --outfile=dist/main.js",
     "build:anywidget-cartpole": "esbuild src/visualizations/cartpole/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-visualization.js",
+    "build:anywidget-pong": "esbuild src/visualizations/pong-policy/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pong-visualization.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -33,6 +34,7 @@
     "./visualizations/value-iteration-q": "./src/visualizations/value-iteration-q/index.ts",
     "./visualizations/monte-carlo": "./src/visualizations/monte-carlo/index.ts",
     "./visualizations/cartpole": "./src/visualizations/cartpole/index.ts",
-    "./visualizations/pong": "./src/visualizations/pong/index.ts"
+    "./visualizations/pong": "./src/visualizations/pong/index.ts",
+    "./visualizations/pong-policy": "./src/visualizations/pong-policy/index.ts"
   }
 }

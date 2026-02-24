@@ -14,10 +14,10 @@ TOTAL_STEPS = 500_000
 MAX_WORKERS = 10
 
 GRID = {
-    'lr':         [5e-4, 1e-3, 2e-3],
-    'decay_dur':  [50_000, 100_000, 200_000, 300_000],
-    'hidden_dim': [16, 32, 64],
-    'num_layers': [1, 2],
+    "lr": [5e-4, 1e-3, 2e-3],
+    "decay_dur": [50_000, 100_000, 200_000, 300_000],
+    "hidden_dim": [16, 32, 64],
+    "num_layers": [1, 2],
 }
 
 _TOP_N = 10
@@ -41,7 +41,7 @@ def peak_score(ep_rets, w=50):
         return sum(ep_rets) / max(len(ep_rets), 1)
     cs = np.cumsum(ep_rets)
     cs[w:] = cs[w:] - cs[:-w]
-    return float(np.max(cs[w - 1:]) / w)
+    return float(np.max(cs[w - 1 :]) / w)
 
 
 def _board_lines(results, total):
@@ -50,20 +50,13 @@ def _board_lines(results, total):
     elapsed = time.monotonic() - _start_time
     avg = elapsed / n
     eta = avg * (total - n)
-    timing = (
-        f"elapsed {_fmt_duration(elapsed)}"
-        f"  avg {avg:.1f}s/cfg"
-        f"  eta {_fmt_duration(eta)}"
-    )
-    hdr = (
-        f"{'#':>3}  {'peak':>6}  {'lr':>6}  {'decay':>6}"
-        f"  {'hdim':>4}  {'nlyr':>4}"
-    )
+    timing = f"elapsed {_fmt_duration(elapsed)}  avg {avg:.1f}s/cfg  eta {_fmt_duration(eta)}"
+    hdr = f"{'#':>3}  {'peak':>6}  {'lr':>6}  {'decay':>6}  {'hdim':>4}  {'nlyr':>4}"
     lines = [timing, f"Progress: {n}/{total}", hdr, "-" * len(hdr)]
     for i, (cfg, _, score) in enumerate(top):
         lines.append(
-            f"  {i+1:>2}  {score:>6.1f}"
-            f"  {cfg['lr']:.0e}  {cfg['decay_dur']//1000:>4}k"
+            f"  {i + 1:>2}  {score:>6.1f}"
+            f"  {cfg['lr']:.0e}  {cfg['decay_dur'] // 1000:>4}k"
             f"  {cfg['hidden_dim']:>4}  {cfg['num_layers']:>4}"
         )
     while len(lines) < _BOARD_HEIGHT:
@@ -88,7 +81,7 @@ def _update_board(results, total):
         best = max(r[2] for r in results)
         print(
             f"[{len(results):>3}/{total}]  score={score:>6.1f}  best={best:>6.1f}"
-            f"  lr={cfg['lr']:.0e}  decay={cfg['decay_dur']//1000:>3}k"
+            f"  lr={cfg['lr']:.0e}  decay={cfg['decay_dur'] // 1000:>3}k"
             f"  hdim={cfg['hidden_dim']:>2}  nlyr={cfg['num_layers']}",
             flush=True,
         )
