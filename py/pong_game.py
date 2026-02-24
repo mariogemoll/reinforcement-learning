@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Mario Gemoll
 # SPDX-License-Identifier: 0BSD
 
-"""Interactive Pong game using the gymnax Pong-misc environment.
+"""Interactive Pong game.
 
 Controls
 --------
@@ -20,7 +20,8 @@ import jax.numpy as jnp  # noqa: E402
 import matplotlib.animation as animation  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-import gymnax  # noqa: E402
+
+import pong_env  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Environment
@@ -28,50 +29,47 @@ import gymnax  # noqa: E402
 STEP_INTERVAL_MS = 100  # ms per game step — lower is faster
 WINNING_SCORE = 7
 
-env, params = gymnax.make("Pong-misc")
-params = params.replace(use_ai_policy=True)
-
-jit_step = jax.jit(env.step)
-jit_reset = jax.jit(env.reset)
+jit_step  = jax.jit(pong_env.step)
+jit_reset = jax.jit(pong_env.reset)
 
 # Pre-warm JIT so the first frame isn't slow
 _key = jax.random.PRNGKey(0)
-_obs, _state = jit_reset(_key, params)
+_state = jit_reset(_key)
 _key, _sk = jax.random.split(_key)
-jit_step(_sk, _state, 0, params)
+jit_step(_state, jnp.int32(0), jnp.int32(0))
 print("Ready.")
 
 # ---------------------------------------------------------------------------
 # Colours
 # ---------------------------------------------------------------------------
-BG_C = np.array([0.05, 0.05, 0.10])
+BG_C     = np.array([0.05, 0.05, 0.10])
 PLAYER_C = np.array([0.25, 0.92, 0.35])  # green  — left paddle  (you)
-AI_C = np.array([0.92, 0.25, 0.25])  # red    — right paddle (cpu)
-BALL_C = np.array([1.00, 1.00, 1.00])  # white
+AI_C     = np.array([0.92, 0.25, 0.25])  # red    — right paddle (cpu)
+BALL_C   = np.array([1.00, 1.00, 1.00])  # white
 
 
 # ---------------------------------------------------------------------------
 # Renderer
 # ---------------------------------------------------------------------------
-def render_state(s) -> np.ndarray:
-    frame = np.tile(BG_C, (env.height, env.width, 1)).copy()
+def render_state(s: pong_env.PongState) -> np.ndarray:
+    frame = np.tile(BG_C, (pong_env.HEIGHT, pong_env.WIDTH, 1)).copy()
 
     # Ball
-    br = int(np.clip(s.ball_position[0], 0, env.height - 1))
-    bc = int(np.clip(s.ball_position[1], 0, env.width - 1))
+    br = int(np.clip(s.ball_row, 0, pong_env.HEIGHT - 1))
+    bc = int(np.clip(s.ball_col, 0, pong_env.WIDTH  - 1))
     frame[br, bc] = BALL_C
 
     # Player paddle — left edge (col 0)
-    p1 = float(s.paddle_centers[0])
-    for r in range(round(p1) - env.paddle_half_height, round(p1) + env.paddle_half_height + 1):
-        if 0 <= r < env.height:
+    for r in range(round(float(s.p1)) - pong_env.PADDLE_HALF,
+                   round(float(s.p1)) + pong_env.PADDLE_HALF + 1):
+        if 0 <= r < pong_env.HEIGHT:
             frame[r, 0] = PLAYER_C
 
-    # AI paddle — right edge (col width-1)
-    p2 = float(s.paddle_centers[1])
-    for r in range(round(p2) - env.paddle_half_height, round(p2) + env.paddle_half_height + 1):
-        if 0 <= r < env.height:
-            frame[r, env.width - 1] = AI_C
+    # AI paddle — right edge (col WIDTH-1)
+    for r in range(round(float(s.p2)) - pong_env.PADDLE_HALF,
+                   round(float(s.p2)) + pong_env.PADDLE_HALF + 1):
+        if 0 <= r < pong_env.HEIGHT:
+            frame[r, pong_env.WIDTH - 1] = AI_C
 
     return frame
 
@@ -81,7 +79,7 @@ def render_state(s) -> np.ndarray:
 # ---------------------------------------------------------------------------
 fig = plt.figure(figsize=(10, 8), facecolor="black")
 try:
-    fig.canvas.manager.set_window_title("Pong — gymnax")
+    fig.canvas.manager.set_window_title("Pong")
 except Exception:
     pass
 
@@ -100,24 +98,9 @@ ax_score.axis("off")
 # Helpers
 # ---------------------------------------------------------------------------
 def start_episode() -> None:
-    """Reset env and add a random initial y-velocity so the ball isn't flat."""
     global key, state
     key, sk = jax.random.split(key)
-    _, state = jit_reset(sk, params)
-    key, sk = jax.random.split(key)
-    vy = float(jax.random.choice(sk, jnp.array([-1, 1])))
-    state = state.replace(ball_velocity=state.ball_velocity.at[0].set(vy))
-
-
-def fix_top_wall(s):
-    """Gymnax Pong-misc omits the top-wall reflection — apply it manually."""
-    escaped = s.ball_position[0] < 0
-    row = jnp.where(escaped, -s.ball_position[0], s.ball_position[0])
-    vy = jnp.where(escaped, -s.ball_velocity[0], s.ball_velocity[0])
-    return s.replace(
-        ball_position=s.ball_position.at[0].set(row),
-        ball_velocity=s.ball_velocity.at[0].set(vy),
-    )
+    state = jit_reset(sk)
 
 
 # Initial state
@@ -246,15 +229,14 @@ def update(_frame):
     if game_over:
         return [img, score_text, overlay]
 
-    key, sk = jax.random.split(key)
-    _obs, new_state, _reward, done, _info = jit_step(sk, state, action, params)
-    new_state = fix_top_wall(new_state)
+    p2_action = pong_env.computer_player(state)
+    new_state, done = jit_step(state, jnp.int32(action), p2_action)
 
     if bool(np.array(done)):
-        ball_col = float(np.array(new_state.ball_position[1]))
-        if ball_col >= env.width:  # right paddle (AI) missed
+        ball_col = float(np.array(new_state.ball_col))
+        if ball_col >= pong_env.WIDTH:  # right paddle (AI) missed
             player_score += 1
-        else:  # left paddle (player) missed
+        else:                            # left paddle (player) missed
             ai_score += 1
         score_text.set_text(f"{player_score}  :  {ai_score}")
 

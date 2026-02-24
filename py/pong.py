@@ -2,71 +2,52 @@
 # SPDX-License-Identifier: 0BSD
 
 import functools
-import warnings
 from pathlib import Path
 
 import anywidget
-import traitlets
-
-import gymnax
 import jax
 import jax.numpy as jnp
 import numpy as np
+import traitlets
 from flax import nnx
 
-# gymnax Pong-misc stores ball_velocity as int32 but clips float32 expressions
-# into it in reflect_on_paddle.  The implicit cast is safe (velocities are
-# bounded integers) but triggers a JAX FutureWarning at JIT-trace time.
-# Suppress it here until gymnax fixes the upstream dtype.
-warnings.filterwarnings(
-    "ignore",
-    message="scatter inputs have incompatible types",
-    category=FutureWarning,
-)
+import pong_env
 
-ENV_NAME = "Pong-misc"
+
+class PongVisualization(anywidget.AnyWidget):
+    _esm = Path(__file__).parent / "dist" / "pong-visualization.js"
+    _css = (Path(__file__).parent.parent / "ts" / "reinforcement-learning.css").read_text()
+
+    weights_base64 = traitlets.Unicode("").tag(sync=True)
+
 NUM_ACTIONS = 3
-# Compact hand-crafted features from the EnvState rather than the raw 30×40×3
-# pixel observation that gymnax returns. This keeps the QL network small and
-# avoids the representational bottleneck that would make plain online QL
-# essentially impossible on pixel inputs.
+# Compact features derived from PongState — normalised to ~[-1, 1].
+# Mirrors extractFeatures() in ts/src/pong/nn-policy.ts.
 OBS_DIM = 6
 START_EPSILON = 1.0
 END_EPSILON = 0.05
 GAMMA = 0.99
 
-_HEIGHT = 30
-_WIDTH = 40
-_MAX_SPEED = 3  # max |ball_velocity[0]|
 
+def extract_features(state: pong_env.PongState) -> jax.Array:
+    """Convert a PongState into a 6-dim float32 feature vector.
 
-@functools.lru_cache(maxsize=1)
-def _get_env_bundle():
-    env, params = gymnax.make(ENV_NAME)
-    params = params.replace(use_ai_policy=True)
-    return env, params
-
-
-def extract_features(state):
-    """Convert a Pong EnvState into a compact 6-dim float32 vector.
-
-    All values are normalised to approximately [-1, 1]:
-      0: our paddle y   (left)
-      1: opponent paddle y  (right, AI-controlled)
+    Features (all normalised to approx [-1, 1]):
+      0: p1 (our paddle)
+      1: p2 (opponent)
       2: ball row
       3: ball col
-      4: ball vertical velocity
-      5: ball horizontal velocity
+      4: ball vrow
+      5: ball vcol
     """
-    our_paddle = state.paddle_centers[0] / (_HEIGHT / 2) - 1.0
-    opp_paddle = state.paddle_centers[1] / (_HEIGHT / 2) - 1.0
-    ball_row = state.ball_position[0] / (_HEIGHT / 2) - 1.0
-    ball_col = state.ball_position[1] / (_WIDTH / 2) - 1.0
-    ball_vy = state.ball_velocity[0].astype(jnp.float32) / _MAX_SPEED
-    ball_vx = state.ball_velocity[1].astype(jnp.float32)
-    return jnp.stack([our_paddle, opp_paddle, ball_row, ball_col, ball_vy, ball_vx]).astype(
-        jnp.float32
-    )
+    return jnp.stack([
+        state.p1       / (pong_env.HEIGHT / 2) - 1.0,
+        state.p2       / (pong_env.HEIGHT / 2) - 1.0,
+        state.ball_row / (pong_env.HEIGHT / 2) - 1.0,
+        state.ball_col / (pong_env.WIDTH  / 2) - 1.0,
+        state.ball_vrow / pong_env.MAX_SPEED,
+        state.ball_vcol,
+    ]).astype(jnp.float32)
 
 
 class QNetwork(nnx.Module):
@@ -103,7 +84,6 @@ def fresh_params(hidden_dim, num_layers):
 
 @functools.lru_cache(maxsize=None)
 def _make_runner(total_steps, hidden_dim, num_layers):
-    env, env_params = _get_env_bundle()
     graphdef = _get_graphdef(hidden_dim, num_layers)
 
     def _fwd(params, x):
@@ -122,7 +102,7 @@ def _make_runner(total_steps, hidden_dim, num_layers):
 
     def body(i, carry):
         key = carry["key"]
-        key, ka, kr, ks, kre = jax.random.split(key, 5)
+        key, ka, kr, kre = jax.random.split(key, 4)
 
         eps = jnp.maximum(
             END_EPSILON,
@@ -132,10 +112,12 @@ def _make_runner(total_steps, hidden_dim, num_layers):
         rand_a = jax.random.randint(kr, shape=(), minval=0, maxval=NUM_ACTIONS)
         action = jax.lax.select(jax.random.uniform(ka) > eps, greedy, rand_a)
 
-        _, next_env_state, reward, done, _ = env.step(ks, carry["env_state"], action, env_params)
+        p2_action = pong_env.computer_player(carry["env_state"])
+        next_env_state, done = pong_env.step(carry["env_state"], action, p2_action)
         next_obs = extract_features(next_env_state)
+        reward = jnp.float32(1.0) - done.astype(jnp.float32)
 
-        timeout = carry["ep_len"] + 1 >= env_params.max_steps_in_episode
+        timeout = carry["ep_len"] + 1 >= pong_env.MAX_STEPS
         terminal = done & ~timeout
 
         loss, params = _train_step(
@@ -148,7 +130,7 @@ def _make_runner(total_steps, hidden_dim, num_layers):
             carry["lr"],
         )
 
-        _, reset_env_state = env.reset(kre, env_params)
+        reset_env_state = pong_env.reset(kre)
         reset_obs = extract_features(reset_env_state)
         new_obs = jnp.where(done, reset_obs, next_obs)
         new_env_state = jax.tree.map(
@@ -191,12 +173,11 @@ def run_config(cfg, total_steps, init_params):
     """
     hidden_dim = cfg["hidden_dim"]
     num_layers = cfg["num_layers"]
-    env, env_params = _get_env_bundle()
     runner = _make_runner(total_steps, hidden_dim, num_layers)
 
     key = jax.random.key(0)
     key, kr = jax.random.split(key)
-    _, env_state = env.reset(kr, env_params)
+    env_state = pong_env.reset(kr)
     obs = extract_features(env_state)
 
     fc = runner(
@@ -220,18 +201,3 @@ def run_config(cfg, total_steps, init_params):
     losses = np.asarray(fc["loss_arr"]).tolist()
 
     return ep_rets, losses, fc["params"]
-
-
-def __getattr__(name):
-    if name == "env":
-        return _get_env_bundle()[0]
-    if name == "env_params":
-        return _get_env_bundle()[1]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-class PongVisualization(anywidget.AnyWidget):
-    _esm = Path(__file__).parent / "dist" / "pong-visualization.js"
-    _css = (Path(__file__).parent.parent / "ts" / "reinforcement-learning.css").read_text()
-
-    weights_base64 = traitlets.Unicode("").tag(sync=True)

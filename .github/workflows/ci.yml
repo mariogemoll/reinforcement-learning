@@ -46,4 +46,8 @@ jobs:
         working-directory: scripts
         run: pnpm exec check-notebook ../py/dqn.ipynb
       - name: "Run ruff"
-        run: uvx ruff check py/
+        working-directory: py
+        run: uvx ruff check .
+      - name: "Run Python tests"
+        working-directory: py
+        run: uv run pytest -q

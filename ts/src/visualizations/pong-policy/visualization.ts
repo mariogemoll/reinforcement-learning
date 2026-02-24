@@ -45,12 +45,13 @@ function updateQBars(
     els.bar.style.width = `${pct.toFixed(1)}%`;
     els.value.textContent = vals[i].toFixed(2);
     const track = els.bar.parentElement;
-    if (track !== null) {
-      track.classList.toggle(
-        'pong-policy-qbar-track-active',
-        actionIdx[i] === chosenAction
-      );
+    if (track === null) {
+      continue;
     }
+    track.classList.toggle(
+      'pong-policy-qbar-track-active',
+      actionIdx[i] === chosenAction
+    );
   }
 }
 

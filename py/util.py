@@ -220,44 +220,43 @@ def eval_pong_ql_score(
     """
     import importlib
 
-    jax = importlib.import_module("jax")
-    jnp = importlib.import_module("jax.numpy")
-    np = importlib.import_module("numpy")
-    tqdm = importlib.import_module("tqdm.auto").tqdm
-    pong = importlib.import_module("pong")
-
-    env = pong.env
-    env_params = pong.env_params
+    jax      = importlib.import_module("jax")
+    jnp      = importlib.import_module("jax.numpy")
+    np       = importlib.import_module("numpy")
+    tqdm     = importlib.import_module("tqdm.auto").tqdm
+    pong     = importlib.import_module("pong")
+    pong_env = importlib.import_module("pong_env")
 
     @jax.jit
     def rollout_episode(p, key):
-        _, env_state = env.reset(key, env_params)
-        features = pong.extract_features(env_state)
-        done = jnp.bool_(False)
+        env_state = pong_env.reset(key)
+        features  = pong.extract_features(env_state)
+        done  = jnp.bool_(False)
         score = jnp.float32(0.0)
 
         def step_fn(carry, _):
-            features, env_state, done, score, key = carry
-            key, step_key = jax.random.split(key)
+            features, env_state, done, score = carry
 
-            q_values = pong.forward(hidden_dim, num_layers, p, features)
-            action = jnp.argmax(q_values).astype(jnp.int32)
-            _, next_env_state, reward, step_done, _ = env.step(
-                step_key, env_state, action, env_params
-            )
+            q_values  = pong.forward(hidden_dim, num_layers, p, features)
+            action    = jnp.argmax(q_values).astype(jnp.int32)
+            p2_action = pong_env.computer_player(env_state)
+            next_env_state, step_done = pong_env.step(env_state, action, p2_action)
+            reward = jnp.float32(1.0) - step_done.astype(jnp.float32)
+
             next_features = pong.extract_features(next_env_state)
-
-            features = jnp.where(done, features, next_features)
-            env_state = jax.tree.map(lambda n, o: jnp.where(done, o, n), next_env_state, env_state)
+            features  = jnp.where(done, features, next_features)
+            env_state = jax.tree.map(
+                lambda n, o: jnp.where(done, o, n), next_env_state, env_state
+            )
             score = score + jnp.where(done, 0.0, reward)
-            done = jnp.logical_or(done, step_done)
-            return (features, env_state, done, score, key), None
+            done  = jnp.logical_or(done, step_done)
+            return (features, env_state, done, score), None
 
-        (_, _, _, score, _), _ = jax.lax.scan(
+        (_, _, _, score), _ = jax.lax.scan(
             step_fn,
-            (features, env_state, done, score, key),
+            (features, env_state, done, score),
             xs=None,
-            length=env_params.max_steps_in_episode,
+            length=pong_env.MAX_STEPS,
         )
         return score
 
