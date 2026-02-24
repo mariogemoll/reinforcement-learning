@@ -157,6 +157,87 @@ def eval_ql_max_score(
     return max_count, num_eval_episodes, max_score, max_pct
 
 
+def eval_pong_ql_score(
+    params: object,
+    hidden_dim: int,
+    num_layers: int,
+    num_eval_episodes: int = 100,
+    batch_size: int = 20,
+    seed: int = 123,
+    show_progress: bool = True,
+) -> tuple[float, int]:
+    """Evaluate a Pong QL policy and return (mean_score, n_episodes).
+
+    Uses a greedy policy (argmax Q) over compact state features.
+    Each episode score is the cumulative reward (≈ rally length in steps).
+    """
+    import importlib
+
+    jax = importlib.import_module("jax")
+    jnp = importlib.import_module("jax.numpy")
+    np = importlib.import_module("numpy")
+    tqdm = importlib.import_module("tqdm.auto").tqdm
+    pong = importlib.import_module("pong")
+
+    env = pong.env
+    env_params = pong.env_params
+
+    @jax.jit
+    def rollout_episode(p, key):
+        _, env_state = env.reset(key, env_params)
+        features = pong.extract_features(env_state)
+        done = jnp.bool_(False)
+        score = jnp.float32(0.0)
+
+        def step_fn(carry, _):
+            features, env_state, done, score, key = carry
+            key, step_key = jax.random.split(key)
+
+            q_values = pong.forward(hidden_dim, num_layers, p, features)
+            action = jnp.argmax(q_values).astype(jnp.int32)
+            _, next_env_state, reward, step_done, _ = env.step(
+                step_key, env_state, action, env_params
+            )
+            next_features = pong.extract_features(next_env_state)
+
+            features = jnp.where(done, features, next_features)
+            env_state = jax.tree.map(
+                lambda n, o: jnp.where(done, o, n), next_env_state, env_state
+            )
+            score = score + jnp.where(done, 0.0, reward)
+            done = jnp.logical_or(done, step_done)
+            return (features, env_state, done, score, key), None
+
+        (_, _, _, score, _), _ = jax.lax.scan(
+            step_fn,
+            (features, env_state, done, score, key),
+            xs=None,
+            length=env_params.max_steps_in_episode,
+        )
+        return score
+
+    @jax.jit
+    def eval_batch(p, keys):
+        return jax.vmap(lambda k: rollout_episode(p, k))(keys)
+
+    key = jax.random.key(seed)
+    num_batches = (num_eval_episodes + batch_size - 1) // batch_size
+    scores: list[float] = []
+    batch_iter = range(num_batches)
+    if show_progress:
+        batch_iter = tqdm(batch_iter, desc="Evaluating")
+
+    for batch_idx in batch_iter:
+        n = min(batch_size, num_eval_episodes - batch_idx * batch_size)
+        key, seed_key = jax.random.split(key)
+        keys = jax.random.split(seed_key, n)
+        batch_scores = np.asarray(eval_batch(params, keys))
+        scores.extend(batch_scores.tolist())
+
+    mean_score = float(np.mean(scores))
+    return mean_score, num_eval_episodes
+
+
 def eval_dqn_max_score(
     params: object,
     num_eval_episodes: int = 100,
