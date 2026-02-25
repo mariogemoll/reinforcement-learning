@@ -10,6 +10,10 @@ import {
   initGridworldVisualization
 } from './visualizations/gridworld';
 import {
+  initMinAtarBreakoutVisualization,
+  type MinAtarBreakoutVisualization
+} from './visualizations/minatar-breakout';
+import {
   initMonteCarloVisualization,
   type MonteCarloVisualization
 } from './visualizations/monte-carlo';
@@ -54,6 +58,7 @@ let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
 let valueIterationVVisualization: ValueIterationVVisualization | null = null;
 let valueIterationQVisualization: ValueIterationQVisualization | null = null;
 let monteCarloVisualization: MonteCarloVisualization | null = null;
+let minAtarBreakoutVisualization: MinAtarBreakoutVisualization | null = null;
 
 function initialize(): void {
   const pongPanel = document.getElementById('pong-visualization');
@@ -169,6 +174,15 @@ function initialize(): void {
     monteCarloVisualization?.destroy();
     monteCarloVisualization =
       initMonteCarloVisualization(monteCarloPanel);
+  }
+
+  const minAtarBreakoutPanel = document.getElementById(
+    'minatar-breakout-visualization'
+  );
+  if (minAtarBreakoutPanel) {
+    minAtarBreakoutVisualization?.destroy();
+    minAtarBreakoutVisualization =
+      initMinAtarBreakoutVisualization(minAtarBreakoutPanel);
   }
 }
 
