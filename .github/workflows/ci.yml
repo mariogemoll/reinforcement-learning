@@ -44,7 +44,7 @@ jobs:
         run: pnpm build
       - name: "Check notebooks"
         working-directory: scripts
-        run: pnpm exec check-notebook ../py/dqn.ipynb
+        run: for nb in ../py/*.ipynb; do pnpm exec check-notebook "$nb"; done
       - name: "Run ruff"
         working-directory: py
         run: uvx ruff check .
