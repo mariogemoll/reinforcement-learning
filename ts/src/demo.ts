@@ -182,7 +182,10 @@ function initialize(): void {
   if (minAtarBreakoutPanel) {
     minAtarBreakoutVisualization?.destroy();
     minAtarBreakoutVisualization =
-      initMinAtarBreakoutVisualization(minAtarBreakoutPanel);
+      initMinAtarBreakoutVisualization(
+        minAtarBreakoutPanel,
+        '/public/dqn-minatar-breakout-weights.safetensors'
+      );
   }
 }
 

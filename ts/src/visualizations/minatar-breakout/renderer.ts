@@ -10,11 +10,11 @@ const CELL_SIZE = 32;
 export const CANVAS_WIDTH = BREAKOUT_GRID_SIZE * CELL_SIZE;
 export const CANVAS_HEIGHT = BREAKOUT_GRID_SIZE * CELL_SIZE;
 
-// ch0 paddle, ch1 ball, ch2 trail, ch3 brick.
+// ch0 paddle, ch1 ball, ch3 brick. (Trail channel intentionally hidden.)
 const CHANNEL_COLORS = [
   '#e74c3c',
   '#ffffff',
-  '#7f8c8d',
+  '',
   '#2ecc71'
 ];
 
@@ -38,6 +38,9 @@ export function renderMinAtarBreakout(
       let activeChannel = -1;
       const base = (row * BREAKOUT_GRID_SIZE + col) * BREAKOUT_CHANNELS;
       for (let channel = 0; channel < BREAKOUT_CHANNELS; channel++) {
+        if (channel === 2) {
+          continue;
+        }
         if (observation[base + channel] > 0) {
           activeChannel = channel;
         }

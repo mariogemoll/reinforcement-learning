@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
-    "lint": "eslint src && stylelint \"*.css\""
+    "lint": "eslint src && stylelint \"*.css\"",
+    "build:anywidget-minatar-breakout": "esbuild src/visualizations/minatar-breakout/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/minatar-breakout-visualization.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.1",

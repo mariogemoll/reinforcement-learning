@@ -4,9 +4,20 @@
 export interface MinAtarBreakoutVizDom {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
+  userModeRadio: HTMLInputElement;
+  policyModeRadio: HTMLInputElement;
+  policyModeText: HTMLSpanElement;
+  restartBtn: HTMLButtonElement;
+  hint: HTMLSpanElement;
+  qPanel: HTMLDivElement;
   overlay: HTMLDivElement;
   overlayTitle: HTMLDivElement;
-  newGameBtn: HTMLButtonElement;
+  overlayRestartBtn: HTMLButtonElement;
   scoreValue: HTMLSpanElement;
   stepValue: HTMLSpanElement;
+  qBars: {
+    noop: { bar: HTMLDivElement; value: HTMLSpanElement };
+    left: { bar: HTMLDivElement; value: HTMLSpanElement };
+    right: { bar: HTMLDivElement; value: HTMLSpanElement };
+  };
 }

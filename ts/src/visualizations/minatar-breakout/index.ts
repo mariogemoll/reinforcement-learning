@@ -8,7 +8,8 @@ import {
 } from './visualization';
 
 export function initMinAtarBreakoutVisualization(
-  parent: HTMLElement
+  parent: HTMLElement,
+  weightsUrl?: string
 ): MinAtarBreakoutVisualization {
-  return initializeMinAtarBreakoutVisualization(parent);
+  return initializeMinAtarBreakoutVisualization(parent, weightsUrl);
 }

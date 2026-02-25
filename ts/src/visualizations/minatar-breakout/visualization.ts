@@ -9,32 +9,84 @@ import {
   resetBreakoutState,
   stepBreakoutState
 } from '../../minatar/breakout';
+import {
+  type BreakoutNNPolicy,
+  type BreakoutQValues,
+  loadBreakoutNNPolicy } from '../../minatar/breakout-nn-policy';
 import { wireEvents } from '../shared/event-wiring';
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   renderMinAtarBreakout
 } from './renderer';
+import type { MinAtarBreakoutVizDom } from './types';
 import { createMinAtarBreakoutVizDom } from './ui';
 
 export interface MinAtarBreakoutVisualization {
   destroy(): void;
 }
 
-const STEP_INTERVAL_MS = 160;
+type BreakoutMode = 'user' | 'policy';
+
+const USER_STEP_INTERVAL_MS = 160;
+const POLICY_STEP_INTERVAL_MS = 120;
+
+function updateQBars(
+  qBars: MinAtarBreakoutVizDom['qBars'],
+  qValues: BreakoutQValues,
+  chosenAction: BreakoutAction
+): void {
+  const vals = [qValues.noop, qValues.left, qValues.right];
+  const min = Math.min(...vals);
+  const shifted = vals.map(v => v - min);
+  const max = Math.max(...shifted, 1e-6);
+  const keys: ('noop' | 'left' | 'right')[] = ['noop', 'left', 'right'];
+  const actionIdx = [0, 1, 2];
+
+  for (const [i, key] of keys.entries()) {
+    const pct = (shifted[i] / max) * 100;
+    const els = qBars[key];
+    els.bar.style.width = `${pct.toFixed(1)}%`;
+    els.value.textContent = vals[i].toFixed(2);
+    const track = els.bar.parentElement;
+    if (track === null) {
+      continue;
+    }
+    track.classList.toggle('pong-policy-qbar-track-active', actionIdx[i] === chosenAction);
+  }
+}
+
+function clearQBars(qBars: MinAtarBreakoutVizDom['qBars']): void {
+  for (const key of ['noop', 'left', 'right'] as const) {
+    qBars[key].bar.style.width = '0%';
+    qBars[key].value.textContent = '0.00';
+    const track = qBars[key].bar.parentElement;
+    if (track !== null) {
+      track.classList.remove('pong-policy-qbar-track-active');
+    }
+  }
+}
 
 export function initializeMinAtarBreakoutVisualization(
-  parent: HTMLElement
+  parent: HTMLElement,
+  policyWeightsUrl?: string
 ): MinAtarBreakoutVisualization {
   const dom = createMinAtarBreakoutVizDom();
   const {
     container,
     canvas,
+    userModeRadio,
+    policyModeRadio,
+    policyModeText,
+    restartBtn,
+    overlayRestartBtn,
+    hint,
+    qPanel,
     overlay,
     overlayTitle,
-    newGameBtn,
     scoreValue,
-    stepValue
+    stepValue,
+    qBars
   } = dom;
 
   const placeholder = parent.querySelector('.placeholder');
@@ -49,9 +101,13 @@ export function initializeMinAtarBreakoutVisualization(
 
   let state: BreakoutState = resetBreakoutState();
   let observation = getBreakoutObservation(state);
-  let action: BreakoutAction = 0;
+  let userAction: BreakoutAction = 0;
   let score = 0;
   let intervalId: number | null = null;
+  let mode: BreakoutMode = policyModeRadio.checked ? 'policy' : 'user';
+  let policy: BreakoutNNPolicy | null = null;
+  let policyLoadPromise: Promise<BreakoutNNPolicy> | null = null;
+  const isPolicyMode = (): boolean => mode === 'policy';
 
   const render = (): void => {
     renderMinAtarBreakout(canvas, observation);
@@ -67,6 +123,13 @@ export function initializeMinAtarBreakoutVisualization(
   };
 
   const tick = (): void => {
+    let action: BreakoutAction = userAction;
+    if (mode === 'policy' && policy !== null) {
+      const { qValues, action: policyAction } = policy(state);
+      updateQBars(qBars, qValues, policyAction);
+      action = policyAction;
+    }
+
     const result = stepBreakoutState(state, action);
     state = result.state;
     observation = result.observation;
@@ -79,62 +142,175 @@ export function initializeMinAtarBreakoutVisualization(
         ? 'Time limit reached'
         : 'Game over';
       overlay.hidden = false;
-      action = 0;
+      userAction = 0;
     }
   };
 
   const startTimer = (): void => {
     stopTimer();
-    intervalId = window.setInterval(tick, STEP_INTERVAL_MS);
+    const stepMs = mode === 'policy' ? POLICY_STEP_INTERVAL_MS : USER_STEP_INTERVAL_MS;
+    intervalId = window.setInterval(tick, stepMs);
   };
 
-  const handleNewGame = (): void => {
+  const syncModeUi = (): void => {
+    const isPolicy = mode === 'policy';
+    qPanel.hidden = !isPolicy;
+    hint.textContent = isPolicy
+      ? 'Policy plays automatically'
+      : 'Click to focus   A / \u2190 left   D / \u2192 right';
+    restartBtn.textContent = isPolicy ? 'Restart demo' : 'New game';
+    overlayRestartBtn.textContent = isPolicy ? 'Start demo' : 'Start';
+    if (!isPolicy) {
+      clearQBars(qBars);
+    }
+  };
+
+  const resetEpisode = (): void => {
     state = resetBreakoutState();
     observation = getBreakoutObservation(state);
-    action = 0;
+    userAction = 0;
     score = 0;
+    if (mode !== 'policy') {
+      clearQBars(qBars);
+    }
+  };
+
+  const ensurePolicyLoaded = async(): Promise<boolean> => {
+    if (policy !== null) {
+      return true;
+    }
+    if (policyWeightsUrl === undefined) {
+      policyModeText.textContent = 'Policy demo (weights missing)';
+      policyModeRadio.disabled = true;
+      return false;
+    }
+    if (policyLoadPromise === null) {
+      policyModeText.textContent = 'Policy demo (loading...)';
+      policyLoadPromise = loadBreakoutNNPolicy(policyWeightsUrl).then(loadedPolicy => {
+        policy = loadedPolicy;
+        policyModeText.textContent = 'Policy demo';
+        policyModeRadio.disabled = false;
+        return loadedPolicy;
+      }).catch((error: unknown) => {
+        policyModeText.textContent = 'Policy demo (weights missing)';
+        policyModeRadio.disabled = true;
+        policyLoadPromise = null;
+        throw error;
+      });
+    }
+    try {
+      await policyLoadPromise;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleRestart = async(): Promise<void> => {
+    if (mode === 'policy' && policy === null) {
+      overlay.hidden = false;
+      overlayTitle.textContent = 'Loading policy...';
+      restartBtn.disabled = true;
+      overlayRestartBtn.disabled = true;
+      const loaded = await ensurePolicyLoaded();
+      restartBtn.disabled = false;
+      overlayRestartBtn.disabled = false;
+      if (!loaded || !isPolicyMode()) {
+        if (isPolicyMode()) {
+          mode = 'user';
+          userModeRadio.checked = true;
+          syncModeUi();
+        }
+        stopTimer();
+        resetEpisode();
+        render();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Breakout';
+        return;
+      }
+    }
+    resetEpisode();
     overlay.hidden = true;
     render();
     startTimer();
     canvas.focus();
   };
 
+  const handleModeChange = (): void => {
+    mode = policyModeRadio.checked ? 'policy' : 'user';
+    syncModeUi();
+    if (mode === 'policy') {
+      stopTimer();
+      resetEpisode();
+      render();
+      overlay.hidden = false;
+      overlayTitle.textContent = 'Policy demo';
+      return;
+    }
+    stopTimer();
+    resetEpisode();
+    render();
+    overlay.hidden = false;
+    overlayTitle.textContent = 'Breakout';
+  };
+
   const handleKeyDown = (event: KeyboardEvent): void => {
+    if (mode !== 'user') {
+      return;
+    }
     if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
       event.preventDefault();
-      action = 1;
+      userAction = 1;
     } else if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
       event.preventDefault();
-      action = 2;
+      userAction = 2;
     } else if (event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
-      action = 0;
+      userAction = 0;
     }
   };
 
   const handleKeyUp = (event: KeyboardEvent): void => {
+    if (mode !== 'user') {
+      return;
+    }
     if (
       event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A' ||
       event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D'
     ) {
-      action = 0;
+      userAction = 0;
     }
   };
 
   const handleBlur = (): void => {
-    action = 0;
+    userAction = 0;
   };
 
   const teardownEvents = wireEvents([
-    [newGameBtn, 'click', handleNewGame],
+    [restartBtn, 'click', (): void => { void handleRestart(); }],
+    [overlayRestartBtn, 'click', (): void => { void handleRestart(); }],
+    [userModeRadio, 'change', handleModeChange],
+    [policyModeRadio, 'change', handleModeChange],
     [canvas, 'keydown', handleKeyDown as EventListener],
     [canvas, 'keyup', handleKeyUp as EventListener],
     [canvas, 'blur', handleBlur]
   ]);
 
-  overlayTitle.textContent = 'MinAtar Breakout';
+  overlayTitle.textContent = mode === 'policy' ? 'Policy demo' : 'Breakout';
   overlay.hidden = false;
+  syncModeUi();
   render();
+
+  if (policyWeightsUrl === undefined) {
+    policyModeText.textContent = 'Policy demo (weights missing)';
+    policyModeRadio.disabled = true;
+    if (mode === 'policy') {
+      mode = 'user';
+      userModeRadio.checked = true;
+      syncModeUi();
+      overlayTitle.textContent = 'Breakout';
+    }
+  }
 
   return {
     destroy(): void {
