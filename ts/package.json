@@ -7,6 +7,7 @@
     "build": "esbuild src/demo.ts --bundle --format=esm --minify --outfile=dist/main.js",
     "build:anywidget-cartpole": "esbuild src/visualizations/cartpole/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-visualization.js",
     "build:anywidget-pong": "esbuild src/visualizations/pong-policy/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pong-visualization.js",
+    "build:anywidget-pixel-pong": "esbuild src/visualizations/pixel-pong-policy/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pixel-pong-visualization.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -36,6 +37,7 @@
     "./visualizations/cartpole": "./src/visualizations/cartpole/index.ts",
     "./visualizations/pong": "./src/visualizations/pong/index.ts",
     "./visualizations/pong-policy": "./src/visualizations/pong-policy/index.ts",
-    "./visualizations/pixel-pong": "./src/visualizations/pixel-pong/index.ts"
+    "./visualizations/pixel-pong": "./src/visualizations/pixel-pong/index.ts",
+    "./visualizations/pixel-pong-policy": "./src/visualizations/pixel-pong-policy/index.ts"
   }
 }

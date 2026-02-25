@@ -18,6 +18,10 @@ import {
   type PixelPongVisualization
 } from './visualizations/pixel-pong';
 import {
+  initPixelPongPolicyVisualization,
+  type PixelPongPolicyVisualization
+} from './visualizations/pixel-pong-policy';
+import {
   initPolicyIterationQVisualization,
   type PolicyIterationQVisualization
 } from './visualizations/policy-iteration-q';
@@ -43,6 +47,7 @@ let cartpoleVisualization: CartPoleVisualization | null = null;
 let pongVisualization: PongVisualization | null = null;
 let pongPolicyVisualization: PongPolicyVisualization | null = null;
 let pixelPongVisualization: PixelPongVisualization | null = null;
+let pixelPongPolicyVisualization: PixelPongPolicyVisualization | null = null;
 let gridworldVisualization: GridworldVisualization | null = null;
 let policyIterationVVisualization: PolicyIterationVVisualization | null = null;
 let policyIterationQVisualization: PolicyIterationQVisualization | null = null;
@@ -79,6 +84,25 @@ function initialize(): void {
   if (pixelPongPanel) {
     pixelPongVisualization?.destroy();
     pixelPongVisualization = initPixelPongVisualization(pixelPongPanel);
+  }
+
+  const pixelPongPolicyPanel = document.getElementById('pixel-pong-policy-visualization');
+  if (pixelPongPolicyPanel) {
+    pixelPongPolicyVisualization?.destroy();
+    pixelPongPolicyVisualization = null;
+    void initPixelPongPolicyVisualization(
+      pixelPongPolicyPanel,
+      '/public/pixel-pong-weights.safetensors'
+    ).then(viz => {
+      pixelPongPolicyVisualization = viz;
+    }).catch(() => {
+      const placeholder = pixelPongPolicyPanel.querySelector('.placeholder');
+      if (placeholder) {
+        placeholder.textContent =
+          'Pixel Pong policy: weights not found ' +
+          '(place pixel-pong-weights.safetensors in ts/public/)';
+      }
+    });
   }
 
   const cartpolePolicyPanel = document.getElementById(
