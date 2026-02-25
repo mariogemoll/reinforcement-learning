@@ -102,7 +102,13 @@ def fresh_params(hidden_dim, num_layers):
 
 
 @functools.lru_cache(maxsize=None)
-def _make_runner(total_steps, hidden_dim, num_layers):
+def _make_body(hidden_dim, num_layers):
+    """Compile the per-step body for fori_loop.
+
+    Uses carry["step_offset"] as the base so the same body works for both
+    full runs and chunked vmap execution: global_step = i + step_offset.
+    Set step_offset=0 for a plain (non-chunked) run.
+    """
     graphdef = _get_graphdef(hidden_dim, num_layers)
 
     def _fwd(params, x):
@@ -123,10 +129,12 @@ def _make_runner(total_steps, hidden_dim, num_layers):
         key = carry["key"]
         key, ka, kr, kre = jax.random.split(key, 4)
 
+        global_step = i + carry["step_offset"]
+
         obs = carry["frame_stack"].reshape(N_FRAMES, pong_pixel_env.HEIGHT, pong_pixel_env.WIDTH)
         eps = jnp.maximum(
             END_EPSILON,
-            START_EPSILON - (START_EPSILON - END_EPSILON) * (i / carry["decay_dur"]),
+            START_EPSILON - (START_EPSILON - END_EPSILON) * (global_step / carry["decay_dur"]),
         )
         greedy = jnp.argmax(_fwd(carry["params"], obs))
         rand_a = jax.random.randint(kr, shape=(), minval=0, maxval=NUM_ACTIONS)
@@ -178,14 +186,63 @@ def _make_runner(total_steps, hidden_dim, num_layers):
             "ep_len": ep_len,
             "ep_rets": new_ep_rets,
             "ep_count": new_ep_count,
-            "loss_arr": carry["loss_arr"].at[i].set(loss),
+            "loss_arr": carry["loss_arr"].at[global_step].set(loss),
         }
+
+    return body
+
+
+@functools.lru_cache(maxsize=None)
+def _make_runner(total_steps, hidden_dim, num_layers):
+    body = _make_body(hidden_dim, num_layers)
 
     @jax.jit
     def run(init_carry):
         return jax.lax.fori_loop(0, total_steps, body, init_carry)
 
     return run
+
+
+@functools.lru_cache(maxsize=None)
+def _make_chunk_runner(chunk_steps, hidden_dim, num_layers):
+    body = _make_body(hidden_dim, num_layers)
+
+    @jax.jit
+    def run_chunk(carry):
+        return jax.lax.fori_loop(0, chunk_steps, body, carry)
+
+    return run_chunk
+
+
+def get_runner(total_steps, hidden_dim, num_layers):
+    """Public accessor for the cached, JIT-compiled runner."""
+    return _make_runner(total_steps, hidden_dim, num_layers)
+
+
+def get_chunk_runner(chunk_steps, hidden_dim, num_layers):
+    """Public accessor for the cached chunk runner (for vmap + progress)."""
+    return _make_chunk_runner(chunk_steps, hidden_dim, num_layers)
+
+
+def build_init_carry(cfg, total_steps, init_params, key):
+    """Build the initial carry dict for one training run."""
+    key, kr = jax.random.split(key)
+    env_state = pong_env.reset(kr)
+    frame_stack = make_frame_stack(pixels_obs(env_state))
+    return {
+        "key": key,
+        "frame_stack": frame_stack,
+        "env_state": env_state,
+        "params": init_params,
+        "ep_return": jnp.float32(0.0),
+        "ep_len": jnp.int32(0),
+        "lr": jnp.float32(cfg["lr"]),
+        "decay_dur": jnp.float32(cfg["decay_dur"]),
+        "loss_arr": jnp.zeros((total_steps,), dtype=jnp.float32),
+        "ep_rets": jnp.zeros((total_steps,), dtype=jnp.float32),
+        "ep_count": jnp.int32(0),
+        "step_offset": jnp.int32(0),
+    }
 
 
 def run_config(cfg, total_steps, init_params):
@@ -215,6 +272,7 @@ def run_config(cfg, total_steps, init_params):
             "loss_arr": jnp.zeros((total_steps,), dtype=jnp.float32),
             "ep_rets": jnp.zeros((total_steps,), dtype=jnp.float32),
             "ep_count": jnp.int32(0),
+            "step_offset": jnp.int32(0),
         }
     )
 
