@@ -368,6 +368,9 @@ def eval_dqn_max_score(
     batch_size: int = 20,
     seed: int = 123,
     show_progress: bool = True,
+    env_name: str = "CartPole-v1",
+    hidden_dim: int = 16,
+    num_layers: int = 1,
 ) -> tuple[int, int, float, float]:
     """Evaluate a DQN policy and report how often it reaches max score."""
     import importlib
@@ -378,9 +381,7 @@ def eval_dqn_max_score(
     tqdm = importlib.import_module("tqdm.auto").tqdm
     dqn = importlib.import_module("dqn")
 
-    env = dqn.env
-    env_params = dqn.env_params
-    forward = dqn.forward
+    env, env_params = dqn._get_env_bundle(env_name)
 
     @jax.jit
     def rollout_episode(p, key):
@@ -392,7 +393,13 @@ def eval_dqn_max_score(
             obs, env_state, done, score, key = carry
             key, step_key = jax.random.split(key)
 
-            q_values = forward(p, obs)
+            q_values = dqn.forward(
+                p,
+                obs,
+                env_name=env_name,
+                hidden_dim=hidden_dim,
+                num_layers=num_layers,
+            )
             action = jnp.argmax(q_values).astype(jnp.int32)
             next_obs, next_env_state, reward, step_done, _ = env.step(
                 step_key, env_state, action, env_params
