@@ -26,6 +26,7 @@ export function createPongVizDom(): PongVizDom {
   overlayTitle.className = 'pong-viz-overlay-title';
 
   const newGameBtn = document.createElement('button');
+  newGameBtn.className = 'pong-viz-overlay-btn';
   newGameBtn.type = 'button';
   newGameBtn.textContent = 'New game';
 

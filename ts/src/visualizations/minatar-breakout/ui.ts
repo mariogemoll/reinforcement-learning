@@ -10,22 +10,22 @@ interface QBarEls {
 
 function makeQBarRow(label: string, color: string): { row: HTMLDivElement; els: QBarEls } {
   const row = document.createElement('div');
-  row.className = 'pong-policy-qbar-row';
+  row.className = 'minatar-breakout-qbar-row';
 
   const labelEl = document.createElement('span');
-  labelEl.className = 'pong-policy-qbar-label';
+  labelEl.className = 'minatar-breakout-qbar-label';
   labelEl.textContent = label;
 
   const track = document.createElement('div');
-  track.className = 'pong-policy-qbar-track';
+  track.className = 'minatar-breakout-qbar-track';
 
   const bar = document.createElement('div');
-  bar.className = 'pong-policy-qbar-fill';
+  bar.className = 'minatar-breakout-qbar-fill';
   bar.style.background = color;
   bar.style.width = '0%';
 
   const value = document.createElement('span');
-  value.className = 'pong-policy-qbar-value';
+  value.className = 'minatar-breakout-qbar-value';
   value.textContent = '0.00';
 
   track.appendChild(bar);
@@ -89,23 +89,24 @@ export function createMinAtarBreakoutVizDom(): MinAtarBreakoutVizDom {
   restartSection.appendChild(restartBtn);
 
   const canvasWrap = document.createElement('div');
-  canvasWrap.className = 'pong-viz-canvas-wrap';
+  canvasWrap.className = 'minatar-breakout-viz-canvas-wrap';
 
   const canvas = document.createElement('canvas');
-  canvas.className = 'pong-viz-canvas';
+  canvas.className = 'minatar-breakout-viz-canvas';
   canvas.tabIndex = 0;
 
   const overlay = document.createElement('div');
-  overlay.className = 'pong-viz-overlay';
+  overlay.className = 'minatar-breakout-viz-overlay';
   overlay.hidden = true;
 
   const overlayPanel = document.createElement('div');
-  overlayPanel.className = 'pong-viz-overlay-panel';
+  overlayPanel.className = 'minatar-breakout-viz-overlay-panel';
 
   const overlayTitle = document.createElement('div');
-  overlayTitle.className = 'pong-viz-overlay-title';
+  overlayTitle.className = 'minatar-breakout-viz-overlay-title';
 
   const overlayRestartBtn = document.createElement('button');
+  overlayRestartBtn.className = 'minatar-breakout-viz-overlay-btn';
   overlayRestartBtn.type = 'button';
   overlayRestartBtn.textContent = 'Start';
 
@@ -114,11 +115,11 @@ export function createMinAtarBreakoutVizDom(): MinAtarBreakoutVizDom {
   canvasWrap.append(canvas, overlay);
 
   const qPanel = document.createElement('div');
-  qPanel.className = 'pong-policy-qpanel';
+  qPanel.className = 'minatar-breakout-qpanel';
   qPanel.hidden = true;
 
   const qTitle = document.createElement('div');
-  qTitle.className = 'pong-policy-qpanel-title';
+  qTitle.className = 'minatar-breakout-qpanel-title';
   qTitle.textContent = 'Q-values (NN)';
 
   const barColor = '#9ca3af';

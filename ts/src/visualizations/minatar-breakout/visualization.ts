@@ -55,7 +55,7 @@ function updateQBars(
     if (track === null) {
       continue;
     }
-    track.classList.toggle('pong-policy-qbar-track-active', actionIdx[i] === chosenAction);
+    track.classList.toggle('minatar-breakout-qbar-track-active', actionIdx[i] === chosenAction);
   }
 }
 
@@ -65,7 +65,7 @@ function clearQBars(qBars: MinAtarBreakoutVizDom['qBars']): void {
     qBars[key].value.textContent = '0.00';
     const track = qBars[key].bar.parentElement;
     if (track !== null) {
-      track.classList.remove('pong-policy-qbar-track-active');
+      track.classList.remove('minatar-breakout-qbar-track-active');
     }
   }
 }
