@@ -184,7 +184,7 @@ function initialize(): void {
     minAtarBreakoutVisualization =
       initMinAtarBreakoutVisualization(
         minAtarBreakoutPanel,
-        '/public/dqn-minatar-breakout-weights.safetensors'
+        '/public/dqn-minatar-breakout-cnn-weights.safetensors'
       );
   }
 }

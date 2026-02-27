@@ -63,11 +63,61 @@ class QNetwork(nnx.Module):
         return getattr(self, f"layer_{self.num_layers - 1}")(x)
 
 
+class CNNQNetwork(nnx.Module):
+    """CNN Q-network for spatial observations (e.g. MinAtar 10×10×C).
+
+    Uses 3×3 VALID convolutions followed by a dense head.
+    obs_shape: (H, W, C) — channels-last format.
+    filters: sequence of output channel counts for each conv layer.
+    fc_dim: width of the fully-connected hidden layer.
+    """
+
+    def __init__(self, obs_shape, num_actions, filters, fc_dim, rngs: nnx.Rngs):
+        self.obs_shape = obs_shape
+        self.filters = list(filters)
+        self.fc_dim = fc_dim
+        self.num_actions = num_actions
+
+        in_ch = obs_shape[-1]
+        for i, out_ch in enumerate(filters):
+            setattr(self, f"conv_{i}", nnx.Conv(in_ch, out_ch, (3, 3), padding="VALID", rngs=rngs))
+            in_ch = out_ch
+
+        # Spatial dims shrink by 2 per VALID 3×3 conv
+        h, w = obs_shape[0], obs_shape[1]
+        for _ in filters:
+            h -= 2
+            w -= 2
+        self.flat_dim = h * w * filters[-1]
+
+        self.fc = nnx.Linear(self.flat_dim, fc_dim, rngs=rngs)
+        self.out_layer = nnx.Linear(fc_dim, num_actions, rngs=rngs)
+
+    def __call__(self, x):
+        x = jnp.asarray(x, dtype=jnp.float32)
+        # obs_shape is e.g. (10, 10, 4) — ndim == 3
+        single = x.ndim == len(self.obs_shape)
+        if single:
+            x = x[None]  # (1, H, W, C)
+        for i in range(len(self.filters)):
+            x = nnx.relu(getattr(self, f"conv_{i}")(x))
+        x = x.reshape((x.shape[0], -1))
+        x = nnx.relu(self.fc(x))
+        x = self.out_layer(x)
+        if single:
+            x = x.squeeze(0)
+        return x
+
+
+
 @functools.lru_cache(maxsize=None)
-def _get_graphdef(in_dim, num_actions, hidden_dim, num_layers, obs_ndim):
-    graphdef, _ = nnx.split(
-        QNetwork(in_dim, num_actions, hidden_dim, num_layers, obs_ndim, rngs=nnx.Rngs(0))
-    )
+def _get_graphdef(obs_shape, num_actions, hidden_dim, num_layers, arch="mlp", filters=None, fc_dim=None):
+    if arch == "cnn":
+        net = CNNQNetwork(obs_shape, num_actions, filters, fc_dim, rngs=nnx.Rngs(0))
+    else:
+        obs_dim = int(np.prod(obs_shape))
+        net = QNetwork(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape), rngs=nnx.Rngs(0))
+    graphdef, _ = nnx.split(net)
     return graphdef
 
 
@@ -80,7 +130,7 @@ def forward(
 ):
     _, _, obs_shape, obs_dim, num_actions = _get_env_spec(env_name)
     return nnx.merge(
-        _get_graphdef(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape)), params
+        _get_graphdef(obs_shape, num_actions, hidden_dim, num_layers), params
     )(x)
 
 
@@ -93,7 +143,7 @@ def make_model(
     """Reconstruct a QNetwork from params (e.g. for weight export)."""
     _, _, obs_shape, obs_dim, num_actions = _get_env_spec(env_name)
     return nnx.merge(
-        _get_graphdef(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape)), params
+        _get_graphdef(obs_shape, num_actions, hidden_dim, num_layers), params
     )
 
 
@@ -101,12 +151,21 @@ def fresh_params(
     env_name=ENV_NAME,
     hidden_dim=HIDDEN_DIM,
     num_layers=NUM_LAYERS,
+    arch="mlp",
+    filters=None,
+    fc_dim=None,
 ):
     """Return (params, target_params) initialised from seed 0 for a given env/arch."""
     _, _, obs_shape, obs_dim, num_actions = _get_env_spec(env_name)
+
+    def _make_net(rng):
+        if arch == "cnn":
+            return CNNQNetwork(obs_shape, num_actions, filters, fc_dim, rngs=rng)
+        return QNetwork(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape), rngs=rng)
+
     r = nnx.Rngs(0)
-    m = QNetwork(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape), rngs=r.fork())
-    t = QNetwork(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape), rngs=r.fork())
+    m = _make_net(r.fork())
+    t = _make_net(r.fork())
     nnx.update(t, nnx.state(m))
     _, p = nnx.split(m)
     _, tp = nnx.split(t)
@@ -128,7 +187,7 @@ def _make_runner(
     num_layers=NUM_LAYERS,
 ):
     env, env_params, obs_shape, obs_dim, num_actions = _get_env_spec(env_name)
-    graphdef = _get_graphdef(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape))
+    graphdef = _get_graphdef(obs_shape, num_actions, hidden_dim, num_layers)
 
     def _fwd(params, x):
         return nnx.merge(graphdef, params)(x)
@@ -171,15 +230,15 @@ def _make_runner(
         terminal = done & ~timeout
 
         bi = carry["buf_idx"] % buf_cap
-        bs = carry["buf_states"].at[bi].set(carry["obs"])
+        bs = carry["buf_states"].at[bi].set(jnp.asarray(carry["obs"], dtype=jnp.uint8))
         ba = carry["buf_actions"].at[bi].set(action)
         br = carry["buf_rewards"].at[bi].set(reward)
-        bns = carry["buf_next_states"].at[bi].set(next_obs)
+        bns = carry["buf_next_states"].at[bi].set(jnp.asarray(next_obs, dtype=jnp.uint8))
         bd = carry["buf_dones"].at[bi].set(terminal)
         bsz = jnp.minimum(carry["buf_size"] + 1, buf_cap)
 
         def do_train(_):
-            idx = jax.random.randint(ksamp, shape=(batch_sz,), minval=0, maxval=bsz)
+            idx = jnp.sort(jax.random.randint(ksamp, shape=(batch_sz,), minval=0, maxval=bsz))
             batch = (bs[idx], ba[idx], br[idx], bns[idx], bd[idx])
             loss, p, o = _train_step(
                 carry["params"],
@@ -285,10 +344,14 @@ def _make_chunk_runner(
     env_name=ENV_NAME,
     hidden_dim=HIDDEN_DIM,
     num_layers=NUM_LAYERS,
+    arch="mlp",
+    filters=None,
+    fc_dim=None,
+    double_dqn=False,
 ):
     """Create a chunked runner for vmap + progress updates."""
     env, env_params, obs_shape, obs_dim, num_actions = _get_env_spec(env_name)
-    graphdef = _get_graphdef(obs_dim, num_actions, hidden_dim, num_layers, len(obs_shape))
+    graphdef = _get_graphdef(obs_shape, num_actions, hidden_dim, num_layers, arch, filters, fc_dim)
 
     def _fwd(params, x):
         return nnx.merge(graphdef, params)(x)
@@ -299,7 +362,12 @@ def _make_chunk_runner(
             s, a, r, ns, d = b
             q = _fwd(p, s)
             curr_q = jnp.take_along_axis(q, a[:, None], axis=1).squeeze()
-            next_q = jnp.max(_fwd(tp, ns), axis=1)
+            if double_dqn:
+                # Double DQN: online net picks action, target net evaluates it
+                next_actions = jnp.argmax(_fwd(p, ns), axis=1)
+                next_q = jnp.take_along_axis(_fwd(tp, ns), next_actions[:, None], axis=1).squeeze()
+            else:
+                next_q = jnp.max(_fwd(tp, ns), axis=1)
             d = d.astype(jnp.float32)
             tgt = r + 0.99 * next_q * (1.0 - d)
             return jnp.mean(optax.huber_loss(curr_q - jax.lax.stop_gradient(tgt)))
@@ -331,15 +399,15 @@ def _make_chunk_runner(
         terminal = done & ~timeout
 
         bi = carry["buf_idx"] % buf_cap
-        bs = carry["buf_states"].at[bi].set(carry["obs"])
+        bs = carry["buf_states"].at[bi].set(jnp.asarray(carry["obs"], dtype=jnp.uint8))
         ba = carry["buf_actions"].at[bi].set(action)
         br = carry["buf_rewards"].at[bi].set(reward)
-        bns = carry["buf_next_states"].at[bi].set(next_obs)
+        bns = carry["buf_next_states"].at[bi].set(jnp.asarray(next_obs, dtype=jnp.uint8))
         bd = carry["buf_dones"].at[bi].set(terminal)
         bsz = jnp.minimum(carry["buf_size"] + 1, buf_cap)
 
         def do_train(_):
-            idx = jax.random.randint(ksamp, shape=(batch_sz,), minval=0, maxval=bsz)
+            idx = jnp.sort(jax.random.randint(ksamp, shape=(batch_sz,), minval=0, maxval=bsz))
             batch = (bs[idx], ba[idx], br[idx], bns[idx], bd[idx])
             loss, p, o = _train_step(
                 carry["params"],
@@ -439,6 +507,10 @@ def _make_chunk_runner(
 
 def get_chunk_runner(chunk_steps, cfg, env_name=ENV_NAME, hidden_dim=HIDDEN_DIM, num_layers=NUM_LAYERS):
     """Public accessor for the cached chunk runner (for vmap + progress)."""
+    arch = cfg.get("arch", "mlp")
+    filters = tuple(cfg["filters"]) if arch == "cnn" else None
+    fc_dim = cfg.get("fc_dim", None) if arch == "cnn" else None
+    double_dqn = bool(cfg.get("double_dqn", False))
     return _make_chunk_runner(
         cfg["buf_cap"],
         cfg["batch_size"],
@@ -446,11 +518,21 @@ def get_chunk_runner(chunk_steps, cfg, env_name=ENV_NAME, hidden_dim=HIDDEN_DIM,
         env_name,
         hidden_dim,
         num_layers,
+        arch,
+        filters,
+        fc_dim,
+        double_dqn,
     )
 
 
-def build_init_carry(cfg, total_steps, init_params, key):
-    """Build the initial carry dict for one training run."""
+def build_init_carry(cfg, total_steps, init_params, key, max_episodes=None, max_updates=None):
+    """Build the initial carry dict for one training run.
+
+    max_episodes: cap on the ep_rets ring-buffer length (defaults to total_steps,
+        which is safe but wastes memory; pass total_steps // min_ep_len for search).
+    max_updates: cap on the loss_arr ring-buffer length (defaults to total_steps;
+        pass total_steps // min_upd_every for search).
+    """
     env_name = cfg.get("env_name", ENV_NAME)
 
     p, tp = init_params
@@ -460,6 +542,9 @@ def build_init_carry(cfg, total_steps, init_params, key):
     key, kr = jax.random.split(key)
     obs, env_state = env.reset(kr, env_params)
 
+    n_ep = max_episodes if max_episodes is not None else total_steps
+    n_upd = max_updates if max_updates is not None else total_steps
+
     return {
         "key": key,
         "obs": obs,
@@ -467,10 +552,10 @@ def build_init_carry(cfg, total_steps, init_params, key):
         "params": p,
         "target_params": tp,
         "opt_state": opt_state,
-        "buf_states": jnp.zeros((cfg["buf_cap"],) + obs_shape, dtype=jnp.float32),
+        "buf_states": jnp.zeros((cfg["buf_cap"],) + obs_shape, dtype=jnp.uint8),
         "buf_actions": jnp.zeros((cfg["buf_cap"],), dtype=jnp.int32),
         "buf_rewards": jnp.zeros((cfg["buf_cap"],), dtype=jnp.float32),
-        "buf_next_states": jnp.zeros((cfg["buf_cap"],) + obs_shape, dtype=jnp.float32),
+        "buf_next_states": jnp.zeros((cfg["buf_cap"],) + obs_shape, dtype=jnp.uint8),
         "buf_dones": jnp.zeros((cfg["buf_cap"],), dtype=jnp.bool_),
         "buf_idx": jnp.int32(0),
         "buf_size": jnp.int32(0),
@@ -485,9 +570,9 @@ def build_init_carry(cfg, total_steps, init_params, key):
         "decay_dur": jnp.float32(cfg["decay_dur"]),
         "learn_start": jnp.int32(cfg["learn_start"]),
         "upd_every": jnp.int32(cfg["upd_every"]),
-        "loss_arr": jnp.zeros((total_steps,), dtype=jnp.float32),
+        "loss_arr": jnp.zeros((n_upd,), dtype=jnp.float32),
         "loss_idx": jnp.int32(0),
-        "ep_rets": jnp.zeros((total_steps,), dtype=jnp.float32),
+        "ep_rets": jnp.zeros((n_ep,), dtype=jnp.float32),
         "ep_count": jnp.int32(0),
         "step_offset": jnp.int32(0),
     }

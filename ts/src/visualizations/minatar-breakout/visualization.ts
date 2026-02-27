@@ -9,10 +9,13 @@ import {
   resetBreakoutState,
   stepBreakoutState
 } from '../../minatar/breakout';
+import { createBreakoutCNNPolicy } from '../../minatar/breakout-cnn-policy';
+import { createBreakoutMLPPolicy } from '../../minatar/breakout-mlp-policy';
 import {
-  type BreakoutNNPolicy,
-  type BreakoutQValues,
-  loadBreakoutNNPolicy } from '../../minatar/breakout-nn-policy';
+  type BreakoutPolicy,
+  type BreakoutQValues } from '../../minatar/breakout-policy-types';
+import { createBreakoutUserPlayer } from '../../minatar/breakout-user-player';
+import { loadSafetensors } from '../../shared/safetensors';
 import { wireEvents } from '../shared/event-wiring';
 import {
   CANVAS_HEIGHT,
@@ -101,12 +104,12 @@ export function initializeMinAtarBreakoutVisualization(
 
   let state: BreakoutState = resetBreakoutState();
   let observation = getBreakoutObservation(state);
-  let userAction: BreakoutAction = 0;
+  const userPlayer = createBreakoutUserPlayer();
   let score = 0;
   let intervalId: number | null = null;
   let mode: BreakoutMode = policyModeRadio.checked ? 'policy' : 'user';
-  let policy: BreakoutNNPolicy | null = null;
-  let policyLoadPromise: Promise<BreakoutNNPolicy> | null = null;
+  let policy: BreakoutPolicy | null = null;
+  let policyLoadPromise: Promise<BreakoutPolicy> | null = null;
   const isPolicyMode = (): boolean => mode === 'policy';
 
   const render = (): void => {
@@ -123,7 +126,7 @@ export function initializeMinAtarBreakoutVisualization(
   };
 
   const tick = (): void => {
-    let action: BreakoutAction = userAction;
+    let action: BreakoutAction = userPlayer.getAction();
     if (mode === 'policy' && policy !== null) {
       const { qValues, action: policyAction } = policy(state);
       updateQBars(qBars, qValues, policyAction);
@@ -142,7 +145,7 @@ export function initializeMinAtarBreakoutVisualization(
         ? 'Time limit reached'
         : 'Game over';
       overlay.hidden = false;
-      userAction = 0;
+      userPlayer.reset();
     }
   };
 
@@ -168,7 +171,7 @@ export function initializeMinAtarBreakoutVisualization(
   const resetEpisode = (): void => {
     state = resetBreakoutState();
     observation = getBreakoutObservation(state);
-    userAction = 0;
+    userPlayer.reset();
     score = 0;
     if (mode !== 'policy') {
       clearQBars(qBars);
@@ -186,7 +189,21 @@ export function initializeMinAtarBreakoutVisualization(
     }
     if (policyLoadPromise === null) {
       policyModeText.textContent = 'Policy demo (loading...)';
-      policyLoadPromise = loadBreakoutNNPolicy(policyWeightsUrl).then(loadedPolicy => {
+      policyLoadPromise = loadSafetensors(policyWeightsUrl).then(tensors => {
+        if (
+          Object.hasOwn(tensors, 'dense_out.weight') &&
+          Object.hasOwn(tensors, 'dense_out.bias')
+        ) {
+          return createBreakoutMLPPolicy(tensors);
+        }
+        if (
+          Object.hasOwn(tensors, 'out_layer.kernel') &&
+          Object.hasOwn(tensors, 'out_layer.bias')
+        ) {
+          return createBreakoutCNNPolicy(tensors);
+        }
+        throw new Error('Unrecognized breakout checkpoint format');
+      }).then(loadedPolicy => {
         policy = loadedPolicy;
         policyModeText.textContent = 'Policy demo';
         policyModeRadio.disabled = false;
@@ -258,32 +275,18 @@ export function initializeMinAtarBreakoutVisualization(
     if (mode !== 'user') {
       return;
     }
-    if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
-      event.preventDefault();
-      userAction = 1;
-    } else if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
-      event.preventDefault();
-      userAction = 2;
-    } else if (event.key === ' ' || event.key === 'Spacebar') {
-      event.preventDefault();
-      userAction = 0;
-    }
+    userPlayer.onKeyDown(event);
   };
 
   const handleKeyUp = (event: KeyboardEvent): void => {
     if (mode !== 'user') {
       return;
     }
-    if (
-      event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A' ||
-      event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D'
-    ) {
-      userAction = 0;
-    }
+    userPlayer.onKeyUp(event);
   };
 
   const handleBlur = (): void => {
-    userAction = 0;
+    userPlayer.onBlur();
   };
 
   const teardownEvents = wireEvents([
