@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mario Gemoll
 // SPDX-License-Identifier: 0BSD
 
+import { initCartPoleReinforceVisualization } from './cartpole/reinforce-viz';
 import {
   type CartPoleVisualization,
   initCartPoleVisualization
@@ -48,6 +49,7 @@ import {
 } from './visualizations/value-iteration-v';
 
 let cartpoleVisualization: CartPoleVisualization | null = null;
+let cartpoleReinforceVisualization: CartPoleVisualization | null = null;
 let pongVisualization: PongVisualization | null = null;
 let pongPolicyVisualization: PongPolicyVisualization | null = null;
 let pixelPongVisualization: PixelPongVisualization | null = null;
@@ -119,6 +121,27 @@ function initialize(): void {
     cartpoleVisualization = null;
     void initCartPoleVisualization(panel, '/public/dqn-weights.safetensors').then(viz => {
       cartpoleVisualization = viz;
+    });
+  }
+
+  const cartpoleReinforcePanel = document.getElementById(
+    'cartpole-reinforce-visualization'
+  );
+  if (cartpoleReinforcePanel) {
+    const panel = cartpoleReinforcePanel;
+    cartpoleReinforceVisualization?.destroy();
+    cartpoleReinforceVisualization = null;
+    void initCartPoleReinforceVisualization(
+      panel, '/public/cartpole-reinforce-weights.safetensors'
+    ).then(viz => {
+      cartpoleReinforceVisualization = viz;
+    }).catch(() => {
+      const placeholder = cartpoleReinforcePanel.querySelector('.placeholder');
+      if (placeholder) {
+        placeholder.textContent =
+          'CartPole REINFORCE: weights not found ' +
+          '(place cartpole-reinforce-weights.safetensors in ts/public/)';
+      }
     });
   }
 
