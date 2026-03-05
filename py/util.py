@@ -362,6 +362,113 @@ def eval_pixel_pong_ql_score(
     return mean_score, num_eval_episodes
 
 
+def eval_reinforce_mean_return(
+    params: object,
+    num_eval_episodes: int,
+    batch_size: int,
+    seed: int,
+    show_progress: bool,
+    hidden_dim: int,
+    num_layers: int,
+) -> tuple[float, int]:
+    """Evaluate a REINFORCE Pendulum policy with deterministic (greedy) actions.
+
+    Returns (mean_return, n_episodes).
+    """
+    import functools
+
+    jax = __import__("jax")
+    jnp = __import__("jax.numpy", fromlist=["numpy"])
+    np = __import__("numpy")
+    reinforce = __import__("reinforce_pendulum")
+    nnx = __import__("flax.nnx", fromlist=["nnx"])
+
+    env, env_params = reinforce._get_env()
+    max_steps = int(env_params.max_steps_in_episode)
+
+    @functools.lru_cache(maxsize=None)
+    def _make_eval_fn(hd, nl):
+        graphdef = reinforce._get_graphdef(hd, nl)
+
+        def _fwd(p, x):
+            return nnx.merge(graphdef, p)(x)
+
+        @jax.jit
+        def run_batch(p, keys):
+            def run_single(key):
+                key, reset_key = jax.random.split(key)
+                obs, env_state = env.reset(reset_key, env_params)
+
+                def step_fn(carry, _):
+                    obs, env_state, key = carry
+                    key, step_key = jax.random.split(key)
+                    mean, _log_std = _fwd(p, obs)
+                    action = jnp.clip(mean, -reinforce.ACTION_LIMIT, reinforce.ACTION_LIMIT)
+                    next_obs, next_env_state, reward, _done, _ = env.step(
+                        step_key, env_state, action, env_params
+                    )
+                    return (next_obs, next_env_state, key), reward
+
+                (_, _, _), rewards = jax.lax.scan(
+                    step_fn, (obs, env_state, key), xs=None, length=max_steps
+                )
+                return jnp.sum(rewards)
+
+            return jax.vmap(run_single)(keys)
+
+        return run_batch
+
+    run_batch = _make_eval_fn(hidden_dim, num_layers)
+    key = jax.random.key(seed)
+    all_returns: list[float] = []
+    n_done = 0
+
+    while n_done < num_eval_episodes:
+        this_batch = min(batch_size, num_eval_episodes - n_done)
+        key, batch_key = jax.random.split(key)
+        keys = jax.random.split(batch_key, this_batch)
+        batch_rets = np.asarray(run_batch(params, keys))
+        all_returns.extend(batch_rets.tolist())
+        n_done += this_batch
+        if show_progress:
+            print(f"  Evaluated {n_done}/{num_eval_episodes} episodes ...", end="\r")
+
+    if show_progress:
+        print()
+
+    return float(np.mean(all_returns)), len(all_returns)
+
+
+def plot_reinforce_metrics(ep_rets: object, window: int = 50) -> None:
+    """Plot REINFORCE training episode returns with a rolling mean."""
+    import importlib
+
+    plt = importlib.import_module("matplotlib.pyplot")
+    np = importlib.import_module("numpy")
+
+    ep_rets_arr = np.asarray(ep_rets, dtype=np.float32)
+    n = len(ep_rets_arr)
+    xs = np.arange(1, n + 1)
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.scatter(xs, ep_rets_arr, s=2, alpha=0.2, color="#ffe5a9")
+
+    if n >= window:
+        cumsum = np.cumsum(ep_rets_arr)
+        cumsum[window:] = cumsum[window:] - cumsum[:-window]
+        rolling = cumsum[window - 1:] / window
+        ax.plot(xs[window - 1:], rolling, color="#2f4e97", linewidth=1.5,
+                label=f"rolling mean ({window})")
+        ax.legend()
+
+    ax.set_xlabel("Episode")
+    ax.set_ylabel("Return")
+    ax.set_title("REINFORCE Pendulum-v1 Training")
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    plt.show()
+
+
 def eval_dqn_max_score(
     params: object,
     num_eval_episodes: int = 100,

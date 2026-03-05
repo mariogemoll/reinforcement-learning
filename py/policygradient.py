@@ -1,97 +1,34 @@
 import jax
 import jax.numpy as jnp
 
+
 def init_mlp_params(key, sizes):
     params = []
     keys = jax.random.split(key, len(sizes) - 1)
     for k, (din, dout) in zip(keys, zip(sizes[:-1], sizes[1:])):
         w = jax.random.normal(k, (din, dout)) * jnp.sqrt(2.0 / din)
         b = jnp.zeros((dout,))
-        params.append((w, b))
+        params.append({'w': w, 'b': b})
     return params
 
-def forward_mlp(params, x):
-    for (w, b) in params[:-1]:
-        x = jax.nn.relu(x @ w + b)
-    w, b = params[-1]
-    return x @ w + b
 
-def sample_action(key, params, obs):
-    logits = forward_mlp(params, obs)
-    return jax.random.categorical(key, logits)
+def forward_mlp(layers, x, activation):
+    for layer in layers[:-1]:
+        x = activation(jnp.dot(x, layer['w']) + layer['b'])
+    final = layers[-1]
+    return jnp.dot(x, final['w']) + final['b']
 
-def rollout_once(key, env, env_params, params, max_steps):
-    key, key_reset = jax.random.split(key)
-    obs, state = env.reset(key_reset, env_params)
-
-    obs_buf = jnp.zeros((max_steps + 1, obs.shape[0]))
-    act_buf = jnp.zeros((max_steps,), dtype=jnp.int32)
-    rew_buf = jnp.zeros((max_steps,))
-    done_buf = jnp.zeros((max_steps,), dtype=jnp.bool_)
-
-    obs_buf = obs_buf.at[0].set(obs)
-
-    def step_fn(carry, t):
-        key, state, obs, done, obs_buf, act_buf, rew_buf, done_buf = carry
-        key, key_a, key_step = jax.random.split(key, 3)
-
-        action = sample_action(key_a, params, obs)
-        next_obs, next_state, reward, next_done, _ = env.step(key_step, state, action, env_params)
-
-        obs_next = jnp.where(done, obs, next_obs)
-        done_next = jnp.logical_or(done, next_done)
-        reward_t = jnp.where(done, 0.0, reward)
-        action_t = jnp.where(done, 0, action)
-
-        obs_buf = obs_buf.at[t + 1].set(obs_next)
-        act_buf = act_buf.at[t].set(action_t)
-        rew_buf = rew_buf.at[t].set(reward_t)
-        done_buf = done_buf.at[t].set(done_next)
-
-        return (key, next_state, obs_next, done_next, obs_buf, act_buf, rew_buf, done_buf), None
-
-    carry0 = (key, state, obs, False, obs_buf, act_buf, rew_buf, done_buf)
-    (key, state, obs, done, obs_buf, act_buf, rew_buf, done_buf), _ = jax.lax.scan(
-        step_fn, carry0, jnp.arange(max_steps)
-    )
-
-    done_int = done_buf.astype(jnp.int32)
-    first_done = jnp.argmax(done_int)
-    any_done = jnp.any(done_buf)
-    length = jnp.where(any_done, first_done + 1, max_steps)
-
-    return {
-        "observations": obs_buf,
-        "actions": act_buf,
-        "rewards": rew_buf,
-        "done": done_buf,
-        "length": length
-    }
-
-def generate_rollouts(key, env, env_params, params, num_rollouts, max_steps):
-    keys = jax.random.split(key, num_rollouts)
-    return jax.vmap(lambda k: rollout_once(k, env, env_params, params, max_steps))(keys)
 
 def calculate_returns(rollouts):
     max_steps = rollouts['rewards'].shape[1]
     mask = jnp.arange(max_steps)[None, :] < rollouts['length'][:, None]
     return jnp.sum(rollouts['rewards'] * mask, axis=1)
 
-def log_prob_trajectory(params, observations, actions, length):
-    max_steps = actions.shape[0]
 
-    def step(carry, t):
-        obs = observations[t]
-        action = actions[t]
-        logits = forward_mlp(params, obs)
-        log_prob = jax.nn.log_softmax(logits)[action]
-        log_prob = jnp.where(t < length, log_prob, 0.0)
-        return carry + log_prob, None
-
-    total_log_prob, _ = jax.lax.scan(step, 0.0, jnp.arange(max_steps))
-    return total_log_prob
-
-def log_prob_trajectories(params, rollouts):
-    return jax.vmap(log_prob_trajectory, in_axes=(None, 0, 0, 0))(
-        params, rollouts['observations'], rollouts['actions'], rollouts['length']
-    )
+def discounted_returns_to_go(rewards, gamma):
+    """G_t = r_t + γ r_{t+1} + γ² r_{t+2} + ... via reverse scan."""
+    def scan_fn(future_G, r):
+        G = r + gamma * future_G
+        return G, G
+    _, returns = jax.lax.scan(scan_fn, jnp.float32(0.0), rewards, reverse=True)
+    return returns
