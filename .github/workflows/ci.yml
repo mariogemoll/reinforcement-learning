@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: "Check for large files"
+        run: scripts/check_files_in_repo.sh
       - uses: pnpm/action-setup@v4
         with:
           version: 10
