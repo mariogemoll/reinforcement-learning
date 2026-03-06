@@ -24,6 +24,8 @@ function getCommentStyle(filePath: string): { start: string; end: string } | nul
   case '.jsx':
   case '.mjs':
     return { start: '// ', end: '' };
+  case '.sh':
+    return { start: '# ', end: '' };
   case '.css':
     return { start: '/* ', end: ' */' };
   case '.html':
