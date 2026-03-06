@@ -14,7 +14,8 @@
     "clean": "rm -rf dist",
     "lint": "eslint src && stylelint \"*.css\"",
     "build:anywidget-minatar-breakout": "esbuild src/visualizations/minatar-breakout/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/minatar-breakout-visualization.js",
-    "build:anywidget-cartpole-reinforce": "esbuild src/visualizations/cartpole/reinforce-anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-reinforce-visualization.js"
+    "build:anywidget-cartpole-reinforce": "esbuild src/visualizations/cartpole/reinforce-anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-reinforce-visualization.js",
+    "build:anywidget-pendulum": "esbuild src/visualizations/pendulum/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pendulum-visualization.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.1",

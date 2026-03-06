@@ -19,6 +19,10 @@ import {
   type MonteCarloVisualization
 } from './visualizations/monte-carlo';
 import {
+  initPendulumVisualization,
+  type PendulumVisualization
+} from './visualizations/pendulum';
+import {
   initPixelPongVisualization,
   type PixelPongVisualization
 } from './visualizations/pixel-pong';
@@ -61,6 +65,7 @@ let valueIterationVVisualization: ValueIterationVVisualization | null = null;
 let valueIterationQVisualization: ValueIterationQVisualization | null = null;
 let monteCarloVisualization: MonteCarloVisualization | null = null;
 let minAtarBreakoutVisualization: MinAtarBreakoutVisualization | null = null;
+let pendulumVisualization: PendulumVisualization | null = null;
 
 function initialize(): void {
   const pongPanel = document.getElementById('pong-visualization');
@@ -209,6 +214,27 @@ function initialize(): void {
         minAtarBreakoutPanel,
         '/public/dqn-minatar-breakout-cnn-weights.safetensors'
       );
+  }
+
+  const pendulumPanel = document.getElementById(
+    'pendulum-reinforce-visualization'
+  );
+  if (pendulumPanel) {
+    pendulumVisualization?.destroy();
+    pendulumVisualization = null;
+    void initPendulumVisualization(
+      pendulumPanel,
+      '/public/pendulum-reinforce-weights.safetensors'
+    ).then(viz => {
+      pendulumVisualization = viz;
+    }).catch(() => {
+      const placeholder = pendulumPanel.querySelector('.placeholder');
+      if (placeholder) {
+        placeholder.textContent =
+          'Pendulum REINFORCE: weights not found ' +
+          '(place pendulum-reinforce-weights.safetensors in ts/public/)';
+      }
+    });
   }
 }
 
