@@ -42,6 +42,7 @@
     "./visualizations/pong-policy": "./src/visualizations/pong-policy/index.ts",
     "./visualizations/pixel-pong": "./src/visualizations/pixel-pong/index.ts",
     "./visualizations/pixel-pong-policy": "./src/visualizations/pixel-pong-policy/index.ts",
-    "./visualizations/minatar-breakout": "./src/visualizations/minatar-breakout/index.ts"
+    "./visualizations/minatar-breakout": "./src/visualizations/minatar-breakout/index.ts",
+    "./visualizations/pendulum": "./src/visualizations/pendulum/index.ts"
   }
 }
