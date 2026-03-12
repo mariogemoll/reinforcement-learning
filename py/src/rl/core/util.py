@@ -144,7 +144,7 @@ def eval_ql_max_score(
     jnp = importlib.import_module("jax.numpy")
     np = importlib.import_module("numpy")
     tqdm = importlib.import_module("tqdm.auto").tqdm
-    ql = importlib.import_module("ql")
+    ql = importlib.import_module("rl.cartpole.q_learning")
 
     env = ql.env
     env_params = ql.env_params
@@ -224,8 +224,8 @@ def eval_pong_ql_score(
     jnp      = importlib.import_module("jax.numpy")
     np       = importlib.import_module("numpy")
     tqdm     = importlib.import_module("tqdm.auto").tqdm
-    pong     = importlib.import_module("pong")
-    pong_env = importlib.import_module("pong_env")
+    pong = importlib.import_module("rl.pong.q_learning")
+    pong_env = importlib.import_module("rl.pong.env")
 
     @jax.jit
     def rollout_episode(p, key):
@@ -302,8 +302,8 @@ def eval_pixel_pong_ql_score(
     jnp             = importlib.import_module("jax.numpy")
     np              = importlib.import_module("numpy")
     tqdm            = importlib.import_module("tqdm.auto").tqdm
-    pixel_pong_ql   = importlib.import_module("pixel_pong_ql")
-    pong_env        = importlib.import_module("pong_env")
+    pixel_pong_ql = importlib.import_module("rl.pong.pixel_q_learning")
+    pong_env = importlib.import_module("rl.pong.env")
 
     @jax.jit
     def rollout_episode(p, key):
@@ -380,19 +380,14 @@ def eval_reinforce_mean_return(
     jax = __import__("jax")
     jnp = __import__("jax.numpy", fromlist=["numpy"])
     np = __import__("numpy")
-    reinforce = __import__("reinforce_pendulum")
-    nnx = __import__("flax.nnx", fromlist=["nnx"])
+    gymnax = __import__("gymnax")
+    reinforce = __import__("rl.pendulum.policy_gradient", fromlist=["policy_gradient"])
 
-    env, env_params = reinforce._get_env()
+    env, env_params = gymnax.make("Pendulum-v1")
     max_steps = int(env_params.max_steps_in_episode)
 
     @functools.lru_cache(maxsize=None)
-    def _make_eval_fn(hd, nl):
-        graphdef = reinforce._get_graphdef(hd, nl)
-
-        def _fwd(p, x):
-            return nnx.merge(graphdef, p)(x)
-
+    def _make_eval_fn(_hd, _nl):
         @jax.jit
         def run_batch(p, keys):
             def run_single(key):
@@ -402,8 +397,7 @@ def eval_reinforce_mean_return(
                 def step_fn(carry, _):
                     obs, env_state, key = carry
                     key, step_key = jax.random.split(key)
-                    mean, _log_std = _fwd(p, obs)
-                    action = jnp.clip(mean, -reinforce.ACTION_LIMIT, reinforce.ACTION_LIMIT)
+                    action = reinforce._policy_forward(p, obs)
                     next_obs, next_env_state, reward, _done, _ = env.step(
                         step_key, env_state, action, env_params
                     )
@@ -486,7 +480,7 @@ def eval_dqn_max_score(
     jnp = importlib.import_module("jax.numpy")
     np = importlib.import_module("numpy")
     tqdm = importlib.import_module("tqdm.auto").tqdm
-    dqn = importlib.import_module("dqn")
+    dqn = importlib.import_module("rl.core.dqn")
 
     env, env_params = dqn._get_env_bundle(env_name)
 

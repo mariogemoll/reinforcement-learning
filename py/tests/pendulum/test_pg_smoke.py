@@ -4,7 +4,7 @@
 import jax
 import jax.numpy as jnp
 
-from pendulum_pg import make_value_training_step
+from rl.pendulum.policy_gradient import make_value_training_step
 
 
 def test_pendulum_value_training_step_smoke():

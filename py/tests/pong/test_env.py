@@ -9,7 +9,7 @@ Each test cites the relevant TS formula so mismatches are easy to trace.
 import jax
 import jax.numpy as jnp
 
-from pong_env import (
+from rl.pong.env import (
     HEIGHT,
     MAX_STEPS,
     PADDLE_HALF,

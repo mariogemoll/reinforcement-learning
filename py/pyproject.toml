@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "reinforcement-learning"
 version = "0.0.0"
@@ -14,6 +18,13 @@ dependencies = [
 
 [tool.ruff]
 line-length = 100
+src = ["src", "tests"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [dependency-groups]
 dev = [

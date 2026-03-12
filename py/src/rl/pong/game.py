@@ -21,7 +21,7 @@ import matplotlib.animation as animation  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-import pong_env  # noqa: E402
+from rl.pong import env as pong_env  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Environment

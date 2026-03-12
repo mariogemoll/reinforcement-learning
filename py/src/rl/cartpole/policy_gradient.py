@@ -3,7 +3,8 @@
 
 import jax
 import jax.numpy as jnp
-from policygradient import init_mlp_params, forward_mlp, calculate_returns
+
+from rl.core.policy_gradient import calculate_returns, forward_mlp, init_mlp_params
 
 __all__ = [
     "init_mlp_params",

@@ -6,7 +6,7 @@ import gymnax
 import optax
 import jax.numpy as jnp
 
-from policygradient import init_mlp_params, forward_mlp, discounted_returns_to_go
+from rl.core.policy_gradient import discounted_returns_to_go, forward_mlp, init_mlp_params
 
 
 OBS_DIM = 3      # [cos(θ), sin(θ), dθ/dt]

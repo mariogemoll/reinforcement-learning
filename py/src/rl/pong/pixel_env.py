@@ -11,7 +11,7 @@ The underlying engine in pong_env is unchanged.
 import jax
 import jax.numpy as jnp
 
-import pong_env
+from rl.pong import env as pong_env
 
 # Re-export constants so callers don't need to import both modules.
 WIDTH = pong_env.WIDTH

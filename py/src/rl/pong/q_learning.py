@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: 0BSD
 
 import functools
-from pathlib import Path
 
 import anywidget
 import jax
@@ -11,12 +10,13 @@ import numpy as np
 import traitlets
 from flax import nnx
 
-import pong_env
+from rl.core.assets import dist_asset_path, shared_css_text
+from rl.pong import env as pong_env
 
 
 class PongVisualization(anywidget.AnyWidget):
-    _esm = Path(__file__).parent / "dist" / "pong-visualization.js"
-    _css = (Path(__file__).parent.parent / "ts" / "reinforcement-learning.css").read_text()
+    _esm = dist_asset_path("pong-visualization.js")
+    _css = shared_css_text()
 
     weights_base64 = traitlets.Unicode("").tag(sync=True)
 

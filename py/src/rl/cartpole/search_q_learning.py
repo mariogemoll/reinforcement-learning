@@ -8,18 +8,16 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 
-from dqn import fresh_params, run_config
+from rl.cartpole.q_learning import fresh_params, run_config
 
-TOTAL_STEPS = 100_000
+TOTAL_STEPS = 200_000
 MAX_WORKERS = 10
 
 GRID = {
-    'lr':          [1e-4, 5e-4, 1e-3],
-    'decay_dur':   [10_000, 25_000, 50_000],
-    'batch_size':  [32, 64, 128],
-    'buf_cap':     [5_000, 10_000, 20_000],
-    'learn_start': [1_000, 5_000, 10_000],
-    'upd_every':   [200, 500, 1000],
+    'lr':         [5e-4, 1e-3, 2e-3],
+    'decay_dur':  [15_000, 25_000, 40_000, 60_000],
+    'hidden_dim': [8, 16, 32, 64],
+    'num_layers': [1, 2],
 }
 
 _TOP_N = 10
@@ -59,15 +57,14 @@ def _board_lines(results, total):
     )
     hdr = (
         f"{'#':>3}  {'peak':>6}  {'lr':>6}  {'decay':>6}"
-        f"  {'bs':>4}  {'buf':>5}  {'ls':>5}  {'ue':>4}"
+        f"  {'hdim':>4}  {'nlyr':>4}"
     )
     lines = [timing, f"Progress: {n}/{total}", hdr, "-" * len(hdr)]
     for i, (cfg, _, score) in enumerate(top):
         lines.append(
             f"  {i+1:>2}  {score:>6.1f}"
             f"  {cfg['lr']:.0e}  {cfg['decay_dur']//1000:>4}k"
-            f"  {cfg['batch_size']:>4}  {cfg['buf_cap']//1000:>3}k"
-            f"  {cfg['learn_start']//1000:>3}k  {cfg['upd_every']:>4}"
+            f"  {cfg['hidden_dim']:>4}  {cfg['num_layers']:>4}"
         )
     while len(lines) < _BOARD_HEIGHT:
         lines.append("")
@@ -91,8 +88,8 @@ def _update_board(results, total):
         best = max(r[2] for r in results)
         print(
             f"[{len(results):>3}/{total}]  score={score:>6.1f}  best={best:>6.1f}"
-            f"  lr={cfg['lr']:.0e}  bs={cfg['batch_size']:>3}"
-            f"  buf={cfg['buf_cap']//1000:>2}k",
+            f"  lr={cfg['lr']:.0e}  decay={cfg['decay_dur']//1000:>2}k"
+            f"  hdim={cfg['hidden_dim']:>2}  nlyr={cfg['num_layers']}",
             flush=True,
         )
     _first_board = False
@@ -100,7 +97,9 @@ def _update_board(results, total):
 
 def _worker(cfg):
     """Runs in a separate process — each has its own JAX/XLA runtime."""
-    ep_rets, _, __ = run_config(cfg, TOTAL_STEPS, fresh_params())
+    ep_rets, _, __ = run_config(
+        cfg, TOTAL_STEPS, fresh_params(cfg["hidden_dim"], cfg["num_layers"])
+    )
     return cfg, ep_rets
 
 

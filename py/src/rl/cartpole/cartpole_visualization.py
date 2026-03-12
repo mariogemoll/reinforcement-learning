@@ -1,14 +1,14 @@
 # SPDX-FileCopyrightText: 2026 Mario Gemoll
 # SPDX-License-Identifier: 0BSD
 
-from pathlib import Path
-
 import anywidget
 import traitlets
 
+from rl.core.assets import dist_asset_path, shared_css_text
+
 
 class CartPoleVisualization(anywidget.AnyWidget):
-    _esm = Path(__file__).parent / "dist" / "cartpole-visualization.js"
-    _css = (Path(__file__).parent.parent / "ts" / "reinforcement-learning.css").read_text()
+    _esm = dist_asset_path("cartpole-visualization.js")
+    _css = shared_css_text()
 
     weights_base64 = traitlets.Unicode("").tag(sync=True)

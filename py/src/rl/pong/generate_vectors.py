@@ -21,15 +21,12 @@ Run with:
     .venv/bin/python generate_pong_vectors.py
 """
 
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
 
 import jax.numpy as jnp
 import numpy as np
 
-from pong_env import (
+from rl.pong.env import (
     HEIGHT,
     MAX_STEPS,
     PADDLE_HALF,
@@ -153,7 +150,7 @@ for ball_row in range(0, HEIGHT, 2):
 
 # ── Write binary files ────────────────────────────────────────────────────────
 
-out_dir = Path(__file__).parent.parent / "ts" / "src" / "pong"
+out_dir = Path(__file__).resolve().parents[4] / "ts" / "src" / "pong"
 
 step_arr = np.array(step_rows, dtype=np.float32)
 assert step_arr.shape[1] == STEP_STRIDE
