@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "esbuild src/demo.ts --bundle --format=esm --sourcemap --outfile=dist/main.js --watch --servedir=.",
-    "build": "esbuild src/demo.ts --bundle --format=esm --minify --outfile=dist/main.js",
+    "dev": "esbuild src/demo.ts --bundle --format=esm --sourcemap --external:three --external:three/examples/jsm/* --outfile=dist/main.js --watch --servedir=.",
+    "build": "esbuild src/demo.ts --bundle --format=esm --minify --external:three --external:three/examples/jsm/* --outfile=dist/main.js",
     "build:anywidget-cartpole": "esbuild src/visualizations/cartpole/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-visualization.js",
     "build:anywidget-pong": "esbuild src/visualizations/pong-policy/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pong-visualization.js",
     "build:anywidget-pixel-pong": "esbuild src/visualizations/pixel-pong-policy/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pixel-pong-visualization.js",
@@ -15,17 +15,20 @@
     "lint": "eslint src && stylelint \"*.css\"",
     "build:anywidget-minatar-breakout": "esbuild src/visualizations/minatar-breakout/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/minatar-breakout-visualization.js",
     "build:anywidget-cartpole-reinforce": "esbuild src/visualizations/cartpole/reinforce-anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/cartpole-reinforce-visualization.js",
-    "build:anywidget-pendulum": "esbuild src/visualizations/pendulum/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pendulum-visualization.js"
+    "build:anywidget-pendulum": "esbuild src/visualizations/pendulum/anywidget.ts --bundle --format=esm --minify --outfile=../py/dist/pendulum-visualization.js",
+    "build:anywidget-hopper": "node ./scripts/build-hopper-anywidget.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.1",
     "@stylistic/stylelint-plugin": "^4.0.0",
     "@types/node": "^25.2.2",
+    "@types/three": "^0.183.1",
     "esbuild": "^0.24.2",
     "eslint": "^9.0.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "stylelint": "^16.26.1",
     "stylelint-config-standard": "^39.0.1",
+    "three": "^0.183.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
@@ -43,6 +46,7 @@
     "./visualizations/pixel-pong": "./src/visualizations/pixel-pong/index.ts",
     "./visualizations/pixel-pong-policy": "./src/visualizations/pixel-pong-policy/index.ts",
     "./visualizations/minatar-breakout": "./src/visualizations/minatar-breakout/index.ts",
-    "./visualizations/pendulum": "./src/visualizations/pendulum/index.ts"
+    "./visualizations/pendulum": "./src/visualizations/pendulum/index.ts",
+    "./visualizations/hopper": "./src/visualizations/hopper/index.ts"
   }
 }

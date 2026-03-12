@@ -39,5 +39,9 @@ export default tseslint.config(
         ]
       }]
     }
+  },
+  {
+    files: ['src/visualizations/hopper/*-cdn-shim.js'],
+    ...tseslint.configs.disableTypeChecked
   }
 );

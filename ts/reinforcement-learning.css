@@ -1082,6 +1082,100 @@
 
 /* ------------------------------------------------------------------ */
 
+/* Hopper PPO visualization                                            */
+
+/* ------------------------------------------------------------------ */
+
+.hopper-viz-root {
+  width: min(100%, 1048px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hopper-viz-viewport {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid rgb(15 23 42 / 12%);
+  border-radius: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgb(184 204 232) 0%, rgb(225 236 246) 100%);
+}
+
+.hopper-viz-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.hopper-viz-controls-left {
+  flex: 0 0 auto;
+}
+
+.hopper-viz-step-row {
+  gap: 6px;
+}
+
+.hopper-viz-step-row .pi-viz-step-counter {
+  min-width: 56px;
+  text-align: left;
+}
+
+.hopper-viz-timeline-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hopper-viz-scrubber {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hopper-viz-timeline-counter {
+  flex: 0 0 auto;
+  min-width: 56px;
+  text-align: right;
+}
+
+.hopper-viz-controls-right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.hopper-viz-mini-control {
+  width: 124px;
+}
+
+.hopper-viz-mini-control select {
+  width: 100%;
+}
+
+@media (width <= 900px) {
+  .hopper-viz-controls {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .hopper-viz-timeline-wrap {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .hopper-viz-controls-right {
+    margin-left: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
 /* Pendulum REINFORCE visualization                                     */
 
 /* ------------------------------------------------------------------ */

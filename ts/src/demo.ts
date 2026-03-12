@@ -11,6 +11,9 @@ import {
   initGridworldVisualization
 } from './visualizations/gridworld';
 import {
+  type HopperVisualization,
+  initHopperVisualization } from './visualizations/hopper';
+import {
   initMinAtarBreakoutVisualization,
   type MinAtarBreakoutVisualization
 } from './visualizations/minatar-breakout';
@@ -66,6 +69,7 @@ let valueIterationQVisualization: ValueIterationQVisualization | null = null;
 let monteCarloVisualization: MonteCarloVisualization | null = null;
 let minAtarBreakoutVisualization: MinAtarBreakoutVisualization | null = null;
 let pendulumVisualization: PendulumVisualization | null = null;
+let hopperVisualization: HopperVisualization | null = null;
 
 function initialize(): void {
   const pongPanel = document.getElementById('pong-visualization');
@@ -233,6 +237,27 @@ function initialize(): void {
         placeholder.textContent =
           'Pendulum REINFORCE: weights not found ' +
           '(place pendulum-reinforce-weights.safetensors in ts/public/)';
+      }
+    });
+  }
+
+  const hopperPanel = document.getElementById(
+    'hopper-visualization'
+  );
+  if (hopperPanel) {
+    hopperVisualization?.destroy();
+    hopperVisualization = null;
+    void initHopperVisualization(
+      hopperPanel,
+      '/public/hopper-rollout.mjroll'
+    ).then(viz => {
+      hopperVisualization = viz;
+    }).catch(() => {
+      const placeholder = hopperPanel.querySelector('.placeholder');
+      if (placeholder) {
+        placeholder.textContent =
+          'Hopper PPO: rollout not found ' +
+          '(place hopper-rollout.mjroll in ts/public/)';
       }
     });
   }

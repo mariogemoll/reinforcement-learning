@@ -13,5 +13,6 @@ pnpm-lock.yaml
 uv.lock
 *.egg-info
 *.log
+*.mjroll
 *.safetensors
 /py/artifacts

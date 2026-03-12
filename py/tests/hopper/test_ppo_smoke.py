@@ -4,7 +4,9 @@
 import jax
 import jax.numpy as jnp
 
-from rl.hopper import PPOConfig, compute_gae, create_train_state, train_epoch
+from rl.hopper.algorithms import compute_gae, train_epoch
+from rl.hopper.config import PPOConfig
+from rl.hopper.networks import create_train_state
 
 
 def test_hopper_gae_shapes_and_finiteness():
