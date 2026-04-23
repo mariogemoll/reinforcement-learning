@@ -5,7 +5,7 @@ import type { CellType, Grid, GridLayout } from './types';
 
 export function createGridFromLayout(layout: GridLayout): Grid {
   const grid: Grid = Array.from({ length: layout.rows }, () =>
-    Array.from({ length: layout.cols }, () => 'floor' as CellType)
+    Array.from({ length: layout.cols }, () => 'floor')
   );
 
   for (const [row, col] of layout.walls) {
